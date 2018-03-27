@@ -1,0 +1,136 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "tvVmLXS0w9aMKlZkVyiECxtbZXI=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "eb925808374e5ca90c83401a40d711dc08c0c0f6",
+			"revisionTime": "2018-03-06T18:15:48Z"
+		},
+		{
+			"checksumSHA1": "8flcrE+NuGsWvdeoiTK+uyjY4CE=",
+			"path": "github.com/name5566/leaf",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "y6E0ovsIXVw7Zod1/fbz9wZV/n4=",
+			"path": "github.com/name5566/leaf/chanrpc",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "sowt7ZfJrH+Wf+rfTflhm1Tca9s=",
+			"path": "github.com/name5566/leaf/cluster",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "As7QD82xhjAwg4791Wg0pY7r0L4=",
+			"path": "github.com/name5566/leaf/conf",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "3DGP02mA3oHKzWZwbX+O2E2awuI=",
+			"path": "github.com/name5566/leaf/console",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "znlgUR3tapJ6zUTmPsZ4EPCI4ss=",
+			"path": "github.com/name5566/leaf/gate",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "ECx6CC5rqOL89b9Slzph0cTwpVY=",
+			"path": "github.com/name5566/leaf/go",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "hDDoUmN8rbcixW2MYmRuN/HDffk=",
+			"path": "github.com/name5566/leaf/log",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "u5iaNOTVoIbuXk/9qHmBfehnO/0=",
+			"path": "github.com/name5566/leaf/module",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "FTr8X1dsYGZDHTFcddfgCs7Zsg4=",
+			"path": "github.com/name5566/leaf/network",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "pfzCxCdIPgZvbG3ALz2MD0PKhSo=",
+			"path": "github.com/name5566/leaf/network/json",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "styQgQMqItaB8sFEst9CAvuvLas=",
+			"path": "github.com/name5566/leaf/recordfile",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "ldrELMgmEp92+sMLAxjdAPOygh4=",
+			"path": "github.com/name5566/leaf/timer",
+			"revision": "09f6b6dfd7a6e71accdd2373702db85964d35d65",
+			"revisionTime": "2017-10-10T10:00:04Z"
+		},
+		{
+			"checksumSHA1": "tNdF4sMIyxsLPXhB7m7ppv8cL+M=",
+			"path": "server/base",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "xQqBkHPa08/NO3G0FEGpP92AIbE=",
+			"path": "server/conf",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "KkQ0NXqlBOyo3OFh4T1uWWBg2HY=",
+			"path": "server/game",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "UVmBa71+OlO5kI3RstlUMAT4+vA=",
+			"path": "server/game/internal",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "7hugFgfCgSOwnnW0/g6BUhAw3ic=",
+			"path": "server/gate",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "DG5O5YRZgHgenpXL7Xed2/PGvns=",
+			"path": "server/gate/internal",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "1Wfa76Nbe/K6bW1gAnSaB+8g8Uw=",
+			"path": "server/login",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "EYz4n00+U/33WZqAxKVh/QwJv84=",
+			"path": "server/login/internal",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "M3djBXzNFianlQ7wF57Cwnc/Ur4=",
+			"path": "server/msg",
+			"revision": ""
+		}
+	],
+	"rootPath": "War-of-Knowledge"
+}
