@@ -1,18 +1,18 @@
 package internal
 
 var (
-	rooms      = make(map[int]*Room)
-	lastRoomId = int(0)
+	Rooms      = make(map[int]*Room)
+	LastRoomId = int(0)
 )
 
 func AddRoom(room *Room) {
-	rooms[room.RoomId] = room
+	Rooms[room.RoomId] = room
 }
 
 func DeleteRoom(roomId int) {
-	delete(rooms, roomId)
+	delete(Rooms, roomId)
 }
 
 func GetRoom(roomId int) *Room {
-	return rooms[roomId]
+	return Rooms[roomId]
 }

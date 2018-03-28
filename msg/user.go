@@ -1,7 +1,7 @@
 package msg
 
 import (
-	"enconding/json"
+	_ "encoding/json"
 )
 
 // req
@@ -12,12 +12,18 @@ type Login struct {
 
 // resp
 type LoginStat struct {
-	Status int    `json:"status"`
-	Msg    string `json:"msg"`
-	ID     int    `json:"id,omitempty"`
+	Status   int    `json:"status"`
+	Msg      string `json:"msg"`
+	PlayerId int    `json:"playerId,omitempty"`
 }
 
-//req
+// req
 type Match struct {
 	PlayerId int
+}
+
+// resp
+type MatchStat struct {
+	Status int    `json:"status"` // 0 匹配成功 ; 1 匹配中 ; 2 错误
+	Msg    string `json:"msg"`
 }

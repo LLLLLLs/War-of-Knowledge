@@ -14,8 +14,6 @@ var (
 )
 
 func init() {
-	handler(&msg.Hello{}, handleHello)
-	handler(&msg.Calculate{}, handleCalculate)
 	handler(&msg.Match{}, handleMatch)
 
 }
@@ -27,48 +25,32 @@ func handler(m interface{}, h interface{}) {
 func handleMatch(args []interface{}) {
 	m := args[0].(*msg.Match)
 	a := args[1].(gate.Agent)
+	log.Debug("Call Match from %v", a.RemoteAddr())
 	room := new(Room)
 
-	if lastRoomId == 0 || GetRoom(lastRoomId).RoomStat == 1 {
-		roomId := lastRoomId + 1
+	if LastRoomId == 0 || GetRoom(LastRoomId).PlayerCount == 2 {
+		roomId := LastRoomId + 1
 		room = NewRoom(roomId)
-		lastRoomId = roomId
+		AddRoom(room)
+		LastRoomId = roomId
 	} else {
-		room = GetRoom(lastRoomId)
+		room = GetRoom(LastRoomId)
 	}
+	fmt.Println("playerId:", m.PlayerId)
 	room.RoomPlayers[m.PlayerId] = a
-	if len(GetRoom(lastRoomId).RoomPlayers) == 2 {
-		room.RoomStat = 1 // Close the room
-	}
-}
-
-func handleHello(args []interface{}) {
-	m := args[0].(*msg.Hello)
-	a := args[1].(gate.Agent)
-	users[ID] = a
-	ID += 1
-
-	log.Debug("hello %v", m.Name)
-
-	a.WriteMsg(&msg.Hello{
-		Name: "client",
-	})
-}
-
-func handleCalculate(args []interface{}) {
-	m := args[0].(*msg.Calculate)
-	a := args[1].(gate.Agent)
-	for i := 0; i < ID; i++ {
-		fmt.Println("ID", i, users[ID] == a)
-		log.Debug("ID %v", i)
-		users[ID].WriteMsg(&msg.Hello{
-			Name: "client",
+	room.PlayerCount += 1
+	fmt.Println("RoomStat:", room)
+	if room.PlayerCount == 1 {
+		a.WriteMsg(&msg.MatchStat{
+			Status: 1,
+			Msg:    "匹配中",
 		})
+	} else {
+		for _, aa := range room.RoomPlayers {
+			aa.WriteMsg(&msg.MatchStat{
+				Status: 0,
+				Msg:    "匹配成功！",
+			})
+		}
 	}
-
-	log.Debug("hello %v", m.X+m.Y)
-
-	// a.WriteMsg(&msg.Hello{
-	// 	Name: "client111",
-	// })
 }

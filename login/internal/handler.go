@@ -20,7 +20,7 @@ type User struct {
 }
 
 var UsersMap = make(map[string]string) //map[name] = pwd
-var PlayerId = 0
+var PlayerId = 1
 
 func handleMsg(m interface{}, h interface{}) {
 	skeleton.RegisterChanRPC(reflect.TypeOf(m), h)
@@ -53,14 +53,20 @@ func handleAuth(args []interface{}) {
 	m := args[0].(*msg.Login)
 	a := args[1].(gate.Agent)
 	pwd, ok := UsersMap[m.UserName]
+	log.Debug("Call Login from %v", a.RemoteAddr())
 	if ok && pwd == m.UserPwd {
 		a.WriteMsg(&msg.LoginStat{
-			Status: 0,
-			Msg:    "Success",
-			ID:     PlayerId,
+			Status:   0,
+			Msg:      "Success",
+			PlayerId: PlayerId,
 		})
 		PlayerId += 1
 	} else {
 		//TODO LoginFail
+		a.WriteMsg(&msg.LoginStat{
+			Status:   1,
+			Msg:      "Account or password is wrong",
+			PlayerId: PlayerId,
+		})
 	}
 }

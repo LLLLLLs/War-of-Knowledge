@@ -8,12 +8,12 @@ import (
 type Room struct {
 	RoomId      int
 	RoomPlayers map[int]gate.Agent
-	RoomStat    int // 0 : open , 1 : close
+	PlayerCount int
 }
 
 func NewRoom(roomId int) *Room {
-	fmt.Println("newRoom", roomId)
-	room := Room{RoomId: roomId, RoomStat: 0}
+	fmt.Println("newRoom:", roomId)
+	room := Room{RoomId: roomId, RoomPlayers: make(map[int]gate.Agent), PlayerCount: 0}
 
 	return &room
 }
