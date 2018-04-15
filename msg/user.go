@@ -24,6 +24,8 @@ type Match struct {
 
 // resp
 type MatchStat struct {
-	Status int    `json:"status"` // 0 匹配成功 ; 1 匹配中 ; 2 错误
-	Msg    string `json:"msg"`
+	Status      int    `json:"status"` // 0 匹配成功 ; 1 匹配中 ; 2 错误
+	Msg         string `json:"msg"`
+	RoomId      int    `json:"roomId"`
+	WhichPlayer int    `json:"whichPlayer"` //0 左;1 右
 }

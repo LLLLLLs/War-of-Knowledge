@@ -1,21 +1,20 @@
 {
-    "Users":
-    [
-        {
-            "UserName":"admin1",
-            "UserPwd":"123456"
-        },
-        {
-            "UserName":"admin2",
-            "UserPwd":"654321"
-        },
-        {
-            "UserName":"1",
-            "UserPwd":"1"
-        },
-        {
-            "UserName":"2",
-            "UserPwd":"2"
-        }
-    ]
+  "Users": [
+    {
+      "UserName": "admin1",
+      "UserPwd": "123456"
+    },
+    {
+      "UserName": "admin2",
+      "UserPwd": "654321"
+    },
+    {
+      "UserName": "1",
+      "UserPwd": "1"
+    },
+    {
+      "UserName": "2",
+      "UserPwd": "2"
+    }
+  ]
 }

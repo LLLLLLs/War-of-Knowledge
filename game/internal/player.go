@@ -1,0 +1,97 @@
+package internal
+
+import (
+	"time"
+
+	"server/msg"
+
+	"github.com/name5566/leaf/gate"
+	"sync"
+)
+
+var (
+	BornPosition1 = msg.TFServer{
+		Position: []float64{37.0, 0.07, 26.0},
+		Rotation: []float64{0.0, 90.0, 0.0},
+	}
+	BornPosition2 = msg.TFServer{
+		Position: []float64{88.0, 0.07, 26.0},
+		Rotation: []float64{0.0, -90.0, 0.0},
+	}
+)
+
+type Player struct {
+	Which int
+	Base  *Base
+	Heros map[int]*Hero
+	Lock  sync.Mutex
+}
+
+func (p *Player) GetHeros(k int) (*Hero, bool) {
+	p.Lock.Lock()
+	defer p.Lock.Unlock()
+	h, ok := p.Heros[k]
+	return h, ok
+}
+
+func (p *Player) SetHeros(k int, v *Hero) {
+	p.Lock.Lock()
+	defer p.Lock.Unlock()
+	p.Heros[k] = v
+}
+
+func (p *Player) DeleteHero(k int) {
+	p.Lock.Lock()
+	defer p.Lock.Unlock()
+	delete(p.Heros, k)
+}
+
+type Base struct {
+	ID     int
+	Money  int
+	Hp     float64
+	TF     *msg.TFServer
+	Radius float64
+}
+
+func (b *Base) GetMoneyByTime(a gate.Agent) {
+	ticker := time.NewTicker(time.Second * 5)
+
+	for {
+		select {
+		case <-ticker.C:
+			b.Money += 10
+			a.WriteMsg(&msg.MoneyLeft{
+				MoneyLeft: b.Money,
+			})
+		}
+	}
+}
+
+func (b *Base) SubHP(damage float64, which int, room Room) {
+	b.Hp -= damage
+	for aa, _ := range room.Players {
+		aa.WriteMsg(&msg.UpdateBaseState{
+			Which: which,
+			Hp:    b.Hp,
+		})
+	}
+}
+
+func NewPlayer(which int) *Player {
+	tf := new(msg.TFServer)
+	if which == 0 {
+		tf.Position = []float64{15.0, 0.0, 26.0}
+		tf.Rotation = []float64{0.0, 0.0, 0.0}
+	} else {
+		tf.Position = []float64{110.0, 0.0, 26.0}
+		tf.Rotation = []float64{0.0, 0.0, 0.0}
+	}
+	p := Player{
+		Which: 0,
+		Base:  &Base{which, 1000, 1000.0, tf, 5.0},
+		Heros: make(map[int]*Hero),
+		Lock:  sync.Mutex{},
+	}
+	return &p
+}

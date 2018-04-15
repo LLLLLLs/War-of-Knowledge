@@ -12,9 +12,22 @@ func init() {
 	Processor.Register(&LoginStat{})
 	Processor.Register(&Match{})
 	Processor.Register(&MatchStat{})
-}
 
-// type Resp struct {
-// 	StateCode int    `json:stateCode`
-// 	Msg       string `json:msg`
-// }
+	Processor.Register(&MoneyLeft{})
+	Processor.Register(&UpdateBaseState{})
+
+	Processor.Register(&UseSkill{})
+	Processor.Register(&UseSkillInf{})
+	Processor.Register(&SkillCrash{})
+
+	Processor.Register(&CreateHero{})
+	Processor.Register(&CreateHeroInf{})
+	Processor.Register(&UpdatePosition{})
+	Processor.Register(&UpdateHeroState{})
+	Processor.Register(&DeleteHero{})
+	Processor.Register(&GetResource{})
+
+	Processor.Register(&CreateMiddle{})
+	Processor.Register(&UpdateMiddleState{})
+	Processor.Register(&DeleteMiddle{})
+}
