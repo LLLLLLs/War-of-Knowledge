@@ -111,10 +111,10 @@ func handleCreateHero(args []interface{}) {
 	player := room.Players[a]
 	which := int(player.Which)
 	hero, err := player.CreateHero(m.HeroType, room.Count+1, which)
-	go HealByHot(*room, hero.ID, a)
 	if err != nil {
 
 	} else {
+		go HealByHot(*room, hero.ID, a)
 		room.Count += 1
 		for aa := range room.Players {
 			aa.WriteMsg(&msg.CreateHeroInf{

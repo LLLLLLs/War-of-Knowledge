@@ -19,6 +19,7 @@ func init() {
 	SkillMap["0000"] = new(Skill0000)
 	SkillMap["0010"] = new(Skill0010)
 	SkillMap["0011"] = new(Skill0011)
+	SkillMap["0020"] = new(Skill0020)
 	SkillMap["0100"] = new(Skill0100)
 	SkillMap["0110"] = new(Skill0110)
 	SkillMap["0111"] = new(Skill0111)
@@ -286,7 +287,7 @@ func (s *Skill0020) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	fs := NewFireSea(room.Count+1, tf)
 	room.Count += 1
 	room.SetMiddle(fs.ID, fs)
-	go fs.TakeAction(a, room, h)
+	go fs.TakeAction_(a, room, h)
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,

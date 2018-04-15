@@ -27,6 +27,8 @@ func rpcCloseAgent(args []interface{}) {
 }
 
 func rpcLogin(args []interface{}) {
+	a := args[0].(gate.Agent)
 	name := args[1].(string)
+	Users[a] = name
 	gamedata.UsersMap[name].Login = true
 }

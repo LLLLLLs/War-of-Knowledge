@@ -79,7 +79,7 @@ func (r *Room) RandomResource(beforeTime, interval time.Duration) {
 					gold.Type,
 				})
 			}
-			log.Debug("create resource %d", gold.ID)
+			log.Debug("room: %d create resource %d", r.RoomId, gold.ID)
 			go gold.TakeAction(r)
 		}
 	}

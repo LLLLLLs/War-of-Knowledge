@@ -280,7 +280,7 @@ type ResourceTree struct {
 	Radius     float64
 	SelfRadius float64
 	Duration   time.Duration
-	interval   time.Duration
+	Interval   time.Duration
 	HP         float64
 }
 
@@ -329,7 +329,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 		}
 	}(quit)
 	for {
-		ticker2 := time.NewTicker(rt.interval)
+		ticker2 := time.NewTicker(rt.Interval)
 		select {
 		case <-ticker2.C:
 			radius := rt.Radius
@@ -339,7 +339,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 			if randi < 30 {
 				resource := NewGold(room.Count+1, resourceTF)
 				room.Count += 1
-				log.Debug("rt create resource %d", resource.ID)
+				log.Debug("rt create gold %d", resource.ID)
 				go resource.TakeAction(room)
 				for aa := range room.Players {
 					aa.WriteMsg(&msg.CreateMiddle{
@@ -351,7 +351,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 			} else if randi < 60 {
 				resource := NewBlood(room.Count+1, resourceTF)
 				room.Count += 1
-				log.Debug("rt create resource %d", resource.ID)
+				log.Debug("rt create blood %d", resource.ID)
 				go resource.TakeAction(room)
 				for aa := range room.Players {
 					aa.WriteMsg(&msg.CreateMiddle{
@@ -363,7 +363,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 			} else {
 				resource := NewMana(room.Count+1, resourceTF)
 				room.Count += 1
-				log.Debug("rt create resource %d", resource.ID)
+				log.Debug("rt create mana %d", resource.ID)
 				go resource.TakeAction(room)
 				for aa := range room.Players {
 					aa.WriteMsg(&msg.CreateMiddle{
@@ -559,7 +559,7 @@ func NewFireSea(id int, tf msg.TFServer) *FireSea {
 	}
 }
 
-func (fs *FireSea) TakeAction(a gate.Agent, room *Room, h *Hero) {
+func (fs *FireSea) TakeAction_(a gate.Agent, room *Room, h *Hero) {
 	quit := make(chan int, 1)
 	go func(q chan int) {
 		timer := time.NewTimer(fs.Duration)
