@@ -108,7 +108,7 @@ func HealByHot(room Room, id int, a gate.Agent) {
 			if h.MP > h.MPMax {
 				h.MP = h.MPMax
 			}
-			for aa, _ := range room.Players {
+			for aa := range room.Players {
 				aa.WriteMsg(&msg.UpdateHeroState{
 					id,
 					h.Type,
@@ -151,7 +151,22 @@ func (h *Hero) AddHP(heal float64, a gate.Agent, room Room) {
 	if h.HP > h.HPMax {
 		h.HP = h.HPMax
 	}
-	for aa, _ := range room.Players {
+	for aa := range room.Players {
+		aa.WriteMsg(&msg.UpdateHeroState{
+			Id:   h.ID,
+			Type: h.Type,
+			Hp:   h.HP,
+			Mp:   h.MP,
+		})
+	}
+}
+
+func (h *Hero) AddMP(heal float64, a gate.Agent, room Room) {
+	h.MP += heal
+	if h.MP > h.MPMax {
+		h.MP = h.MPMax
+	}
+	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			Id:   h.ID,
 			Type: h.Type,

@@ -189,11 +189,31 @@ func handleGetResource(args []interface{}) {
 	log.Debug("call getResource %d from %v", m.ItemId, a.RemoteAddr())
 	room := GetRoom(m.RoomId)
 	p := room.Players[a]
-	p.Base.Money += 1
-	a.WriteMsg(&msg.MoneyLeft{p.Base.Money})
-	room.DeleteMiddle(m.ItemId)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.DeleteMiddle{m.ItemId})
+	item, ok := room.GetMiddle(m.ItemId)
+	if !ok {
+		log.Debug("no middle id:%d", m.ItemId)
+		return
+	}
+	switch middle := item.(type) {
+	case *Gold:
+		p.Base.Money += middle.Value
+		a.WriteMsg(&msg.MoneyLeft{p.Base.Money})
+		room.DeleteMiddle(m.ItemId)
+		for aa := range room.Players {
+			aa.WriteMsg(&msg.DeleteMiddle{m.ItemId})
+		}
+	case *Blood:
+		hero, ok := p.GetHeros(m.HeroId)
+		if !ok {
+			log.Debug("no hero id:%d", m.HeroId)
+		}
+		hero.AddHP(float64(middle.value), a, *room)
+	case *Mana:
+		hero, ok := p.GetHeros(m.HeroId)
+		if !ok {
+			log.Debug("no hero id:%d", m.HeroId)
+		}
+		hero.AddMP(float64(middle.value), a, *room)
 	}
 }
 

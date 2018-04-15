@@ -194,18 +194,6 @@ type Resource struct {
 	Duration time.Duration
 }
 
-func NewResource(id int, tf msg.TFServer) *Resource {
-	return &Resource{
-		MiddleCreature{
-			id,
-			"000",
-			&tf,
-			true,
-		},
-		time.Second * 30,
-	}
-}
-
 func (r *Resource) TakeAction(room *Room) {
 	ticker := time.NewTicker(r.Duration)
 
