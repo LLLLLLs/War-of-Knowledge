@@ -12,10 +12,6 @@ import (
 	"github.com/name5566/leaf/log"
 )
 
-var (
-	ID = 0
-)
-
 func init() {
 	handler(&msg.Match{}, handleMatch)
 	handler(&msg.CreateHero{}, handleCreateHero)
@@ -120,7 +116,7 @@ func handleCreateHero(args []interface{}) {
 
 	} else {
 		room.Count += 1
-		for aa, _ := range room.Players {
+		for aa := range room.Players {
 			aa.WriteMsg(&msg.CreateHeroInf{
 				HeroType:    hero.Type,
 				TFServer:    *hero.Transform,
