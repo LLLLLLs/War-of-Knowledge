@@ -7,6 +7,7 @@ import (
 
 	"github.com/name5566/leaf/gate"
 	"sync"
+	"github.com/name5566/leaf/log"
 )
 
 var (
@@ -52,6 +53,7 @@ type Base struct {
 	Hp     float64
 	TF     *msg.TFServer
 	Radius float64
+	Timer  *time.Timer
 }
 
 func (b *Base) GetMoneyByTime(a gate.Agent) {
@@ -59,6 +61,9 @@ func (b *Base) GetMoneyByTime(a gate.Agent) {
 
 	for {
 		select {
+		case <-b.Timer.C:
+			log.Debug("game over base stop get money")
+			return
 		case <-ticker.C:
 			b.Money += 10
 			a.WriteMsg(&msg.MoneyLeft{
@@ -70,11 +75,17 @@ func (b *Base) GetMoneyByTime(a gate.Agent) {
 
 func (b *Base) SubHP(damage float64, which int, room Room) {
 	b.Hp -= damage
-	for aa, _ := range room.Players {
+	if b.Hp <= 0 {
+		b.Hp = 0
+	}
+	for aa, pp := range room.Players {
 		aa.WriteMsg(&msg.UpdateBaseState{
 			Which: which,
 			Hp:    b.Hp,
 		})
+		if b.Hp == 0 && which == pp.Which {
+			EndBattle(room.RoomId, aa)
+		}
 	}
 }
 
@@ -89,7 +100,13 @@ func NewPlayer(which int) *Player {
 	}
 	p := Player{
 		Which: which,
-		Base:  &Base{which, 1000, 1000.0, tf, 5.0},
+		Base: &Base{ID: which,
+			Money: 1000,
+			Hp: 1000.0,
+			TF: tf,
+			Radius: 5.0,
+			Timer: time.NewTimer(time.Minute * 30),
+		},
 		Heros: make(map[int]*Hero),
 		Lock:  sync.Mutex{},
 	}

@@ -20,6 +20,7 @@ func init() {
 	handler(&msg.GetResource{}, handleGetResource)
 	handler(&msg.SkillCrash{}, handleSkillCrash)
 	handler(&msg.Surrender{}, handleSurrender)
+	handler(&msg.FireBottleCrash{}, handleFireBottleCrash)
 }
 
 func handler(m interface{}, h interface{}) {
@@ -31,11 +32,7 @@ func handleMatch(args []interface{}) {
 	log.Debug("Call Match from %v", a.RemoteAddr())
 	room := new(Room)
 	lastRoom, ok := GetRoom(LastRoomId)
-	if !ok {
-		log.Debug("%v get room fail", a.RemoteAddr())
-		return
-	}
-	if LastRoomId == 0 || lastRoom.PlayerCount == 2 {
+	if !ok || lastRoom.PlayerCount == 2 {
 		roomId := LastRoomId + 1
 		room = NewRoom(roomId)
 		AddRoom(room)
@@ -146,8 +143,11 @@ func handleUpdatePosition(args []interface{}) {
 			log.Debug("fail to get middle")
 			return
 		}
-		if v, ok := middle.(*ElectricBall); ok {
+		switch v := middle.(type) {
+		case *ElectricBall:
 			v.UpdateBallPosition(m.TfServer)
+		case *FireBottle:
+			v.UpdateFireBottle(m.TfServer, room)
 		}
 	}
 }
@@ -190,22 +190,22 @@ func handleGetResource(args []interface{}) {
 	case *Gold:
 		p.Base.Money += middle.Value
 		a.WriteMsg(&msg.MoneyLeft{p.Base.Money})
-		room.DeleteMiddle(m.ItemId)
-		for aa := range room.Players {
-			aa.WriteMsg(&msg.DeleteMiddle{m.ItemId})
-		}
 	case *Blood:
 		hero, ok := p.GetHeros(m.HeroId)
 		if !ok {
 			log.Debug("no hero id:%d", m.HeroId)
 		}
-		hero.AddHP(float64(middle.value), a, *room)
+		hero.Heal(float64(middle.value), a, *room, "HP")
 	case *Mana:
 		hero, ok := p.GetHeros(m.HeroId)
 		if !ok {
 			log.Debug("no hero id:%d", m.HeroId)
 		}
-		hero.AddMP(float64(middle.value), a, *room)
+		hero.Heal(float64(middle.value), a, *room, "MP")
+	}
+	room.DeleteMiddle(m.ItemId)
+	for aa := range room.Players {
+		aa.WriteMsg(&msg.DeleteMiddle{m.ItemId})
 	}
 }
 
@@ -258,6 +258,36 @@ func handleSkillCrash(args []interface{}) {
 	room.DeleteMiddle(m.FromItemId)
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.DeleteMiddle{m.FromItemId})
+	}
+}
+
+func handleFireBottleCrash(args []interface{}) {
+	m := args[0].(*msg.FireBottleCrash)
+	room, ok := GetRoom(m.RoomId)
+	if !ok {
+		log.Debug("wrong room id")
+		return
+	}
+	log.Debug("fire bottle burst")
+	fb, ok := room.GetMiddle(m.ItemId)
+	if !ok {
+		log.Debug("no fire bottle id %d", m.ItemId)
+		return
+	}
+	room.DeleteMiddle(m.ItemId)
+	if v, ok := fb.(*FireBottle); ok {
+		firesea := NewFireSea(room.Count+1, *v.TF)
+		for aa := range room.Players {
+			aa.WriteMsg(&msg.DeleteMiddle{ID: v.ID})
+			aa.WriteMsg(&msg.CreateMiddle{
+				ID:   firesea.ID,
+				TF:   *firesea.TF,
+				Type: firesea.Type,
+			})
+		}
+		room.Count += 1
+		room.SetMiddle(firesea.ID, firesea)
+		firesea.TakeAction_(room, v.Hero)
 	}
 }
 

@@ -14,4 +14,6 @@ func init() {
 	msg.Processor.SetRouter(&msg.UseSkill{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.GetResource{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.SkillCrash{}, game.ChanRPC)
+	msg.Processor.SetRouter(&msg.Surrender{}, game.ChanRPC)
+	msg.Processor.SetRouter(&msg.FireBottleCrash{}, game.ChanRPC)
 }

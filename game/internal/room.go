@@ -57,7 +57,9 @@ func EndBattle(roomId int, lose gate.Agent) {
 		log.Debug("%v get room fail", lose.RemoteAddr())
 		return
 	}
-	for aa := range room.Players {
+	room.Timer.EndTimer.Reset(time.Millisecond)
+	for aa, pp := range room.Players {
+		pp.Base.Timer.Reset(time.Millisecond)
 		aa.WriteMsg(&msg.EndBattle{
 			IsWin: aa != lose,
 		})

@@ -6,7 +6,6 @@ import (
 	"github.com/name5566/leaf/log"
 	"math/rand"
 	"math"
-	"github.com/name5566/leaf/gate"
 )
 
 type Middle interface {
@@ -85,6 +84,7 @@ func (hf *HealFlower) SubHp(damage float64, room Room) {
 	}
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateMiddleState{hf.ID, hf.HP})
+		aa.WriteMsg(&msg.Damage{Id: hf.ID, Damage: damage})
 		if hf.HP == 0 {
 			aa.WriteMsg(&msg.DeleteMiddle{hf.ID})
 		}
@@ -115,7 +115,7 @@ func (hf *HealFlower) TakeAction(room *Room) {
 				for _, h := range pp.Heros {
 					distance := GetDistance(hf.TF, h.Transform)
 					if distance < hf.Radius {
-						h.AddHP(hf.Heal, aa, *room)
+						h.Heal(hf.Heal, aa, *room, "HP")
 					}
 				}
 			}
@@ -168,6 +168,7 @@ func (bt *BarrierTree) SubHp(damage float64, room Room) {
 	}
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateMiddleState{bt.ID, bt.HP})
+		aa.WriteMsg(&msg.Damage{Id: bt.ID, Damage: damage})
 		if bt.HP == 0 {
 			aa.WriteMsg(&msg.DeleteMiddle{bt.ID})
 		}
@@ -265,7 +266,7 @@ func NewMana(id int, tf msg.TFServer) *Mana {
 		Resource{
 			MiddleCreature{
 				id,
-				"011",
+				"020",
 				&tf,
 				true,
 			},
@@ -293,7 +294,7 @@ func NewResourceTree(id int, tf msg.TFServer) *ResourceTree {
 			false,
 		},
 		10.0,
-		2.0,
+		2.5,
 		time.Second * 20,
 		time.Second * 2,
 		200.0,
@@ -312,6 +313,7 @@ func (rt *ResourceTree) SubHp(damage float64, room Room) {
 	}
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateMiddleState{rt.ID, rt.HP})
+		aa.WriteMsg(&msg.Damage{Id: rt.ID, Damage: damage})
 		if rt.HP == 0 {
 			aa.WriteMsg(&msg.DeleteMiddle{rt.ID})
 		}
@@ -341,6 +343,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 				room.Count += 1
 				log.Debug("rt create gold %d", resource.ID)
 				go resource.TakeAction(room)
+				room.SetMiddle(resource.ID, resource)
 				for aa := range room.Players {
 					aa.WriteMsg(&msg.CreateMiddle{
 						resource.ID,
@@ -353,6 +356,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 				room.Count += 1
 				log.Debug("rt create blood %d", resource.ID)
 				go resource.TakeAction(room)
+				room.SetMiddle(resource.ID, resource)
 				for aa := range room.Players {
 					aa.WriteMsg(&msg.CreateMiddle{
 						resource.ID,
@@ -365,6 +369,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 				room.Count += 1
 				log.Debug("rt create mana %d", resource.ID)
 				go resource.TakeAction(room)
+				room.SetMiddle(resource.ID, resource)
 				for aa := range room.Players {
 					aa.WriteMsg(&msg.CreateMiddle{
 						resource.ID,
@@ -397,8 +402,8 @@ func getRandonTFInCircle(radius, selfRadius float64, tf msg.TFServer) msg.TFServ
 	x := tf.Position[0] + xoffset
 	z := tf.Position[2] + zoffset
 	return msg.TFServer{
-		[]float64{x, 0.07, z},
-		[]float64{0, 90, 0},
+		Position: []float64{x, 0.07, z},
+		Rotation: []float64{0, 90, 0},
 	}
 }
 
@@ -510,6 +515,7 @@ func (iw *IceWall) SubHp(damage float64, room Room) {
 	}
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateMiddleState{iw.ID, iw.HP})
+		aa.WriteMsg(&msg.Damage{Id: iw.ID, Damage: damage})
 		if iw.HP == 0 {
 			aa.WriteMsg(&msg.DeleteMiddle{iw.ID})
 		}
@@ -534,6 +540,45 @@ func (iw *IceWall) TakeAction(room *Room) {
 	}
 }
 
+type FireBottle struct {
+	MiddleCreature
+	Target *msg.TFServer
+	Hero   *Hero
+}
+
+func NewFireBottle(id int, target msg.TFServer, hero *Hero) *FireBottle {
+	return &FireBottle{
+		MiddleCreature: MiddleCreature{
+			ID:         id,
+			Type:       "008",
+			TF:         hero.Transform,
+			Invincible: true,
+		},
+		Target: &target,
+		Hero:   hero,
+	}
+}
+
+func (fb *FireBottle) UpdateFireBottle(tf msg.TFServer, room *Room) {
+	fb.TF = &tf
+	distace := GetDistance(fb.Target, fb.TF)
+	if distace < 0.5 {
+		room.DeleteMiddle(fb.ID)
+		firesea := NewFireSea(room.Count+1, *fb.Target)
+		for aa := range room.Players {
+			aa.WriteMsg(&msg.DeleteMiddle{ID: fb.ID})
+			aa.WriteMsg(&msg.CreateMiddle{
+				ID:   firesea.ID,
+				TF:   *firesea.TF,
+				Type: firesea.Type,
+			})
+		}
+		room.Count += 1
+		room.SetMiddle(firesea.ID, firesea)
+		firesea.TakeAction_(room, fb.Hero)
+	}
+}
+
 type FireSea struct {
 	MiddleCreature
 	Duration time.Duration
@@ -551,7 +596,7 @@ func NewFireSea(id int, tf msg.TFServer) *FireSea {
 			&tf,
 			true,
 		},
-		time.Second * 5,
+		time.Second * 8,
 		time.Second * 5,
 		3,
 		time.Millisecond * 300,
@@ -559,7 +604,14 @@ func NewFireSea(id int, tf msg.TFServer) *FireSea {
 	}
 }
 
-func (fs *FireSea) TakeAction_(a gate.Agent, room *Room, h *Hero) {
+func (fs *FireSea) TakeAction_(room *Room, h *Hero) {
+	var enemy *Player
+	for _, pp := range room.Players {
+		if _, ok := pp.Heros[h.ID]; !ok {
+			enemy = pp
+		}
+	}
+
 	quit := make(chan int, 1)
 	go func(q chan int) {
 		timer := time.NewTimer(fs.Duration)
@@ -568,31 +620,40 @@ func (fs *FireSea) TakeAction_(a gate.Agent, room *Room, h *Hero) {
 			quit <- 1
 		}
 	}(quit)
-	ticker := time.NewTicker(fs.Interval)
-	for {
-		select {
-		case <-ticker.C:
-			enemy := GetEnemy(a, *room)
-			for _, hero := range enemy.Heros {
-				if hero.Debuff == nil {
-					hero.Debuff = &Burn{
-						*time.NewTimer(fs.BuffTime),
-						*time.NewTicker(time.Second * 1),
-						(h.Attack + fs.Attack) / 10,
-						false,
+	go func(quit chan int) {
+		ticker := time.NewTicker(fs.Interval)
+		for {
+			select {
+			case <-ticker.C:
+				for _, hero := range enemy.Heros {
+					distance := GetDistance(hero.Transform, fs.TF)
+					if distance > fs.Radius {
+						continue
+					}
+					if hero.Debuff == nil {
+						hero.Debuff = &Burn{
+							Timer:    *time.NewTimer(fs.BuffTime),
+							Ticker:   *time.NewTicker(time.Second * 1),
+							Dot:      (h.Attack + fs.Attack) / 10,
+							IsEffect: false,
+						}
+					}
+					if hero.Debuff.IsEffect == false {
+						hero.Debuff.Timer.Reset(fs.BuffTime)
+						hero.Debuff.IsEffect = true
+						go hero.Burning(enemy, *room)
+					} else {
+						hero.Debuff.Timer.Reset(fs.BuffTime)
 					}
 				}
-				if hero.Debuff.IsEffect == false {
-					hero.Burning(room.Players[a], *room)
-				} else {
-					hero.Debuff.Timer.Reset(fs.BuffTime)
+			case <-quit:
+				room.DeleteMiddle(fs.ID)
+				log.Debug("delete fire sea")
+				for aa := range room.Players {
+					aa.WriteMsg(&msg.DeleteMiddle{fs.ID})
 				}
-			}
-		case <-quit:
-			room.DeleteMiddle(fs.ID)
-			for aa := range room.Players {
-				aa.WriteMsg(&msg.DeleteMiddle{fs.ID})
+				return
 			}
 		}
-	}
+	}(quit)
 }

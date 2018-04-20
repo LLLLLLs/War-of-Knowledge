@@ -19,6 +19,8 @@ func init() {
 	Processor.Register(&UseSkill{})
 	Processor.Register(&UseSkillInf{})
 	Processor.Register(&SkillCrash{})
+	Processor.Register(&FireBottleCrash{})
+	Processor.Register(&Damage{})
 
 	Processor.Register(&CreateHero{})
 	Processor.Register(&CreateHeroInf{})

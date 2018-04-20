@@ -266,7 +266,7 @@ type Skill0020 struct {
 
 func (s *Skill0020) InitSkill() {
 	s.Cost = 20
-	s.CastDistance = 10
+	s.CastDistance = 15
 }
 
 func (s *Skill0020) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
@@ -284,10 +284,9 @@ func (s *Skill0020) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	}
 	log.Debug("success")
 	h.MP -= s.Cost
-	fs := NewFireSea(room.Count+1, tf)
+	fb := NewFireBottle(room.Count+1, tf, h)
 	room.Count += 1
-	room.SetMiddle(fs.ID, fs)
-	go fs.TakeAction_(a, room, h)
+	room.SetMiddle(fb.ID, fb)
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
@@ -297,15 +296,15 @@ func (s *Skill0020) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 		})
 		aa.WriteMsg(&msg.UseSkillInf{
 			h.ID,
-			fs.ID,
+			fb.ID,
 			"0020",
 			true,
 			tf,
 		})
 		aa.WriteMsg(&msg.CreateMiddle{
-			fs.ID,
-			*fs.TF,
-			fs.Type,
+			fb.ID,
+			*fb.TF,
+			fb.Type,
 		})
 	}
 }

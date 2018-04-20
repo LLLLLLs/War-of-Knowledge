@@ -102,3 +102,13 @@ type Surrender struct {
 type EndBattle struct {
 	IsWin bool `json:"isWin"`
 }
+
+type Damage struct {
+	Id     int     `json:"id"`
+	Damage float64 `json:"damage"`
+}
+
+type FireBottleCrash struct {
+	RoomId int
+	ItemId int
+}
