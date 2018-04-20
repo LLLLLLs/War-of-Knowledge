@@ -30,4 +30,7 @@ func init() {
 	Processor.Register(&CreateMiddle{})
 	Processor.Register(&UpdateMiddleState{})
 	Processor.Register(&DeleteMiddle{})
+
+	Processor.Register(&Surrender{})
+	Processor.Register(&EndBattle{})
 }

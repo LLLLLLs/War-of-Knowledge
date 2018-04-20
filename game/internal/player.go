@@ -88,7 +88,7 @@ func NewPlayer(which int) *Player {
 		tf.Rotation = []float64{0.0, 0.0, 0.0}
 	}
 	p := Player{
-		Which: 0,
+		Which: which,
 		Base:  &Base{which, 1000, 1000.0, tf, 5.0},
 		Heros: make(map[int]*Hero),
 		Lock:  sync.Mutex{},

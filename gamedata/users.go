@@ -11,6 +11,8 @@ type Users struct {
 }
 
 type User struct {
+	InBattle bool
+	RoomId   int
 	Login    bool
 	UserName string
 	UserPwd  string
@@ -29,7 +31,13 @@ func loadUsers() {
 		log.Fatal("%v", err)
 	}
 	for _, user := range Us.Users {
-		UsersMap[user.UserName] = &User{false, user.UserName, user.UserPwd}
+		UsersMap[user.UserName] = &User{
+			InBattle: false,
+			RoomId:   0,
+			Login:    false,
+			UserName: user.UserName,
+			UserPwd:  user.UserPwd,
+		}
 	}
 }
 

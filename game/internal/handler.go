@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"math/rand"
 	"reflect"
 	"time"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/log"
+	"server/gamedata"
 )
 
 func init() {
@@ -19,6 +19,7 @@ func init() {
 	handler(&msg.UseSkill{}, handleUseSkill)
 	handler(&msg.GetResource{}, handleGetResource)
 	handler(&msg.SkillCrash{}, handleSkillCrash)
+	handler(&msg.Surrender{}, handleSurrender)
 }
 
 func handler(m interface{}, h interface{}) {
@@ -26,80 +27,59 @@ func handler(m interface{}, h interface{}) {
 }
 
 func handleMatch(args []interface{}) {
-	m := args[0].(*msg.Match)
 	a := args[1].(gate.Agent)
 	log.Debug("Call Match from %v", a.RemoteAddr())
 	room := new(Room)
-
-	if LastRoomId == 0 || GetRoom(LastRoomId).PlayerCount == 2 {
+	lastRoom, ok := GetRoom(LastRoomId)
+	if !ok {
+		log.Debug("%v get room fail", a.RemoteAddr())
+		return
+	}
+	if LastRoomId == 0 || lastRoom.PlayerCount == 2 {
 		roomId := LastRoomId + 1
 		room = NewRoom(roomId)
 		AddRoom(room)
 		LastRoomId = roomId
 	} else {
-		room = GetRoom(LastRoomId)
+		room, ok = GetRoom(LastRoomId)
+		if !ok {
+			log.Debug("%v get room fail", a.RemoteAddr())
+			return
+		}
 	}
-	fmt.Println("playerId:", m.PlayerId)
-	room.RoomPlayers[m.PlayerId] = a
+	Room2Agent[room.RoomId] = append(Room2Agent[room.RoomId], a)
+	Agent2Room[a] = room.RoomId
 	room.PlayerCount += 1
-	fmt.Println("RoomStat:", room)
 	if room.PlayerCount == 1 {
 		a.WriteMsg(&msg.MatchStat{
 			Status: 1,
 			Msg:    "匹配中",
 		})
-	} else {
+	} else { // 匹配成功
 		rand.Seed(time.Now().Unix())
 		r := rand.Intn(100)
-		fmt.Println(r)
-		for i, aa := range room.RoomPlayers {
-			if r >= 50 {
-				if i != m.PlayerId {
-					player1 := NewPlayer(0)
-					player1.Which = 0
-					room.Players[aa] = player1
-					aa.WriteMsg(&msg.MatchStat{
-						Status:      0,
-						Msg:         "匹配成功！",
-						RoomId:      LastRoomId,
-						WhichPlayer: 0,
-					})
-				} else {
-					player2 := NewPlayer(1)
-					player2.Which = 1
-					room.Players[aa] = player2
-					aa.WriteMsg(&msg.MatchStat{
-						Status:      0,
-						Msg:         "匹配成功！",
-						RoomId:      LastRoomId,
-						WhichPlayer: 1,
-					})
-				}
-			} else {
-				if i != m.PlayerId {
-					player1 := NewPlayer(1)
-					player1.Which = 1
-					room.Players[aa] = player1
-					aa.WriteMsg(&msg.MatchStat{
-						Status:      0,
-						Msg:         "匹配成功！",
-						RoomId:      LastRoomId,
-						WhichPlayer: 1,
-					})
-				} else {
-					player2 := NewPlayer(0)
-					player2.Which = 0
-					room.Players[aa] = player2
-					aa.WriteMsg(&msg.MatchStat{
-						Status:      0,
-						Msg:         "匹配成功！",
-						RoomId:      LastRoomId,
-						WhichPlayer: 0,
-					})
-				}
-			}
+		flag := 0
+		if r >= 50 {
+			flag = 1
 		}
-		go StartBattle(room)
+		for i, aa := range Room2Agent[room.RoomId] {
+			which := 0
+			if flag == i {
+				which = 1
+			}
+			player := NewPlayer(which)
+			room.Players[aa] = player
+			aa.WriteMsg(&msg.MatchStat{
+				Status:      0,
+				Msg:         "匹配成功",
+				RoomId:      LastRoomId,
+				WhichPlayer: which,
+			})
+			// 设置玩家信息为战斗中(用于断线重连)
+			gamedata.UsersMap[Users[aa]].InBattle = true
+			gamedata.UsersMap[Users[aa]].RoomId = LastRoomId
+		}
+		go room.StartBattle()
 	}
 }
 
@@ -107,7 +87,11 @@ func handleCreateHero(args []interface{}) {
 	m := args[0].(*msg.CreateHero)
 	a := args[1].(gate.Agent)
 	log.Debug("Call CreateHero from %v", a.RemoteAddr())
-	room := GetRoom(m.RoomId)
+	room, ok := GetRoom(m.RoomId)
+	if !ok {
+		log.Debug("%v get room fail", a.RemoteAddr())
+		return
+	}
 	player := room.Players[a]
 	which := int(player.Which)
 	hero, err := player.CreateHero(m.HeroType, room.Count+1, which)
@@ -142,7 +126,11 @@ func handleCreateHero(args []interface{}) {
 func handleUpdatePosition(args []interface{}) {
 	m := args[0].(*msg.UpdatePosition)
 	a := args[1].(gate.Agent)
-	room := GetRoom(m.RoomId)
+	room, ok := GetRoom(m.RoomId)
+	if !ok {
+		log.Debug("%v get room fail", a.RemoteAddr())
+		return
+	}
 	p := room.Players[a]
 	h, ok := p.GetHeros(m.Id)
 	if ok {
@@ -168,7 +156,11 @@ func handleUseSkill(args []interface{}) {
 	m := args[0].(*msg.UseSkill)
 	a := args[1].(gate.Agent)
 	log.Debug("call skill %s from %v", m.SkillID, a.RemoteAddr())
-	room := GetRoom(m.RoomId)
+	room, ok := GetRoom(m.RoomId)
+	if !ok {
+		log.Debug("%v get room fail", a.RemoteAddr())
+		return
+	}
 	p := room.Players[a]
 	h, ok := p.GetHeros(m.Id)
 	if !ok {
@@ -183,7 +175,11 @@ func handleGetResource(args []interface{}) {
 	m := args[0].(*msg.GetResource)
 	a := args[1].(gate.Agent)
 	log.Debug("call getResource %d from %v", m.ItemId, a.RemoteAddr())
-	room := GetRoom(m.RoomId)
+	room, ok := GetRoom(m.RoomId)
+	if !ok {
+		log.Debug("%v get room fail", a.RemoteAddr())
+		return
+	}
 	p := room.Players[a]
 	item, ok := room.GetMiddle(m.ItemId)
 	if !ok {
@@ -217,7 +213,11 @@ func handleSkillCrash(args []interface{}) {
 	m := args[0].(*msg.SkillCrash)
 	a := args[1].(gate.Agent)
 	log.Debug("call skill-crash from %d to %d from %v", m.FromHeroId, m.ToId, a.RemoteAddr())
-	room := GetRoom(m.RoomId)
+	room, ok := GetRoom(m.RoomId)
+	if !ok {
+		log.Debug("%v get room fail", a.RemoteAddr())
+		return
+	}
 	p := room.Players[a]
 	enemy := GetEnemy(a, *room)
 	fromHero, _ := p.GetHeros(m.FromHeroId)
@@ -259,4 +259,11 @@ func handleSkillCrash(args []interface{}) {
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.DeleteMiddle{m.FromItemId})
 	}
+}
+
+func handleSurrender(args []interface{}) {
+	m := args[0].(*msg.Surrender)
+	a := args[1].(gate.Agent)
+	log.Debug("call surrender from %v", a.RemoteAddr())
+	EndBattle(m.RoomId, a)
 }

@@ -13,6 +13,7 @@ func DeleteRoom(roomId int) {
 	delete(Rooms, roomId)
 }
 
-func GetRoom(roomId int) *Room {
-	return Rooms[roomId]
+func GetRoom(roomId int) (*Room, bool) {
+	room, ok := Rooms[roomId]
+	return room, ok
 }

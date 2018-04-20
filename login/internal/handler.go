@@ -50,10 +50,12 @@ func handleAuth(args []interface{}) {
 			PlayerId: PlayerId,
 		})
 		PlayerId += 1
-		user.Login = true
 		log.Debug("user %s login success", m.UserName)
+		// 如果玩家还在战斗中则恢复战斗状态(断线重连)
+		if gamedata.UsersMap[m.UserName].InBattle == true {
+			game.ChanRPC.Go("RecoverBattle", a)
+		}
 	} else {
-		//TODO LoginFail
 		a.WriteMsg(&msg.LoginStat{
 			Status:   1,
 			Msg:      "account or password is wrong",

@@ -89,8 +89,16 @@ type GetResource struct {
 }
 
 type SkillCrash struct {
-	RoomId   int
+	RoomId     int
 	FromHeroId int
 	FromItemId int
-	ToId     int
+	ToId       int
+}
+
+type Surrender struct {
+	RoomId int `json:"roomId"`
+}
+
+type EndBattle struct {
+	IsWin bool `json:"isWin"`
 }
