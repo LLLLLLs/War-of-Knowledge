@@ -10,10 +10,12 @@ import (
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/log"
 	"server/gamedata"
+	"fmt"
 )
 
 func init() {
 	handler(&msg.Match{}, handleMatch)
+	handler(&msg.QuitMatch{}, handleQuitMatch)
 	handler(&msg.CreateHero{}, handleCreateHero)
 	handler(&msg.UpdatePosition{}, handleUpdatePosition)
 	handler(&msg.UseSkill{}, handleUseSkill)
@@ -21,6 +23,8 @@ func init() {
 	handler(&msg.SkillCrash{}, handleSkillCrash)
 	handler(&msg.Surrender{}, handleSurrender)
 	handler(&msg.FireBottleCrash{}, handleFireBottleCrash)
+	handler(&msg.Upgrade{}, handleUpgrade)
+
 }
 
 func handler(m interface{}, h interface{}) {
@@ -33,10 +37,13 @@ func handleMatch(args []interface{}) {
 	room := new(Room)
 	lastRoom, ok := GetRoom(LastRoomId)
 	if !ok || lastRoom.PlayerCount == 2 {
-		roomId := LastRoomId + 1
-		room = NewRoom(roomId)
+		roomId := LastRoomId
+		if ok {
+			roomId = LastRoomId + 1
+			LastRoomId += 1
+		}
+		room = NewRoom(roomId, fmt.Sprintf("房间_%d", roomId))
 		AddRoom(room)
-		LastRoomId = roomId
 	} else {
 		room, ok = GetRoom(LastRoomId)
 		if !ok {
@@ -83,7 +90,7 @@ func handleMatch(args []interface{}) {
 func handleCreateHero(args []interface{}) {
 	m := args[0].(*msg.CreateHero)
 	a := args[1].(gate.Agent)
-	log.Debug("Call CreateHero from %v", a.RemoteAddr())
+	log.Debug("call createHero from %v", a.RemoteAddr())
 	room, ok := GetRoom(m.RoomId)
 	if !ok {
 		log.Debug("%v get room fail", a.RemoteAddr())
@@ -91,14 +98,20 @@ func handleCreateHero(args []interface{}) {
 	}
 	player := room.Players[a]
 	which := int(player.Which)
-	hero, err := player.CreateHero(m.HeroType, room.Count+1, which)
+	hero, err := player.CreateHero(m.HeroType, room.Count+1, which, nil)
 	if err != nil {
-
+		log.Debug("创建英雄失败,%s", err.Error())
+		a.WriteMsg(&msg.CreateHeroInf{
+			Msg: err.Error(),
+		})
+		return
 	} else {
-		go HealByHot(*room, hero.ID, a)
+		log.Debug("创建英雄成功,%s", m.HeroType)
+		player.SetHeros(hero.ID, hero)
 		room.Count += 1
 		for aa := range room.Players {
 			aa.WriteMsg(&msg.CreateHeroInf{
+				Msg:         "ok",
 				HeroType:    hero.Type,
 				TFServer:    *hero.Transform,
 				WhichPlayer: which,
@@ -125,7 +138,7 @@ func handleUpdatePosition(args []interface{}) {
 	a := args[1].(gate.Agent)
 	room, ok := GetRoom(m.RoomId)
 	if !ok {
-		log.Debug("%v get room fail", a.RemoteAddr())
+		log.Debug("UpdatePosition: %v 房间不存在", a.RemoteAddr())
 		return
 	}
 	p := room.Players[a]
@@ -140,7 +153,7 @@ func handleUpdatePosition(args []interface{}) {
 	} else {
 		middle, ok := room.GetMiddle(m.Id)
 		if !ok {
-			log.Debug("fail to get middle")
+			log.Debug("UpdatePosition:获取中立生物失败")
 			return
 		}
 		switch v := middle.(type) {
@@ -296,4 +309,25 @@ func handleSurrender(args []interface{}) {
 	a := args[1].(gate.Agent)
 	log.Debug("call surrender from %v", a.RemoteAddr())
 	EndBattle(m.RoomId, a)
+}
+
+func handleUpgrade(args []interface{}) {
+	m := args[0].(*msg.Upgrade)
+	a := args[1].(gate.Agent)
+	log.Debug("英雄 %d 升级", m.Id)
+	room, ok := GetRoom(m.RoomId)
+	if !ok {
+		log.Debug("升级时获取房间失败")
+		return
+	}
+	for aa, pp := range room.Players {
+		if aa == a {
+			pp.Upgrade(room, m.Id, m.TypeOld, m.TypeNew)
+		}
+	}
+}
+
+func handleQuitMatch(args []interface{}) {
+	a := args[1].(gate.Agent)
+	QuitMatch(a)
 }

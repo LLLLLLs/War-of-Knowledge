@@ -29,3 +29,7 @@ type MatchStat struct {
 	RoomId      int    `json:"roomId"`
 	WhichPlayer int    `json:"whichPlayer"` //0 左;1 右
 }
+
+type User struct {
+	UserName string `json:"userName"`
+}

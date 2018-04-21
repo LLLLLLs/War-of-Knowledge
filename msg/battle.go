@@ -10,6 +10,7 @@ type CreateHero struct {
 }
 
 type CreateHeroInf struct {
+	Msg         string   `json:"msg"`
 	HeroType    string   `json:"heroType"`
 	TFServer    TFServer `json:"tfServer"`
 	WhichPlayer int      `json:"whichPlayer"`
@@ -52,10 +53,9 @@ type UseSkillInf struct {
 }
 
 type UpdateHeroState struct {
-	Id   int     `json:"id"`
-	Type string  `json:"type"`
-	Hp   float64 `json:"hp"`
-	Mp   float64 `json:"mp"`
+	Id int     `json:"id"`
+	Hp float64 `json:"hp"`
+	Mp float64 `json:"mp"`
 }
 
 type UpdateBaseState struct {
@@ -111,4 +111,26 @@ type Damage struct {
 type FireBottleCrash struct {
 	RoomId int
 	ItemId int
+}
+
+type Upgrade struct {
+	RoomId  int    `json:"roomId"`
+	Id      int    `json:"id"`
+	TypeOld string `json:"typeOld"`
+	TypeNew string `json:"typeNew"`
+}
+
+type GetRoomList struct {
+}
+
+type RoomInfo struct {
+	RoomId int    `json:"roomId"`
+	Name   string `json:"name"`
+	Users  []User `json:"users"`
+}
+
+type QuitMatch struct {
+}
+
+type HeartBeat struct {
 }

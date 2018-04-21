@@ -26,15 +26,20 @@ func rpcCloseAgent(args []interface{}) {
 		gamedata.UsersMap[Users[a]].Login = false
 	}
 	if roomId, ok := Agent2Room[a]; ok {
-		if _, ok := GetRoom(roomId); ok {
+		if room, ok := GetRoom(roomId); ok {
 			//在room里增加 断线计时器 和 重连计时器
 			//TODO
-			EndBattle(roomId, a)
-			delete(Agent2Room, a)
+			if room.Matching == false {
+				EndBattle(roomId, a)
+				delete(Agent2Room, a)
+				delete(Room2Agent, roomId)
+				delete(Users, a)
+				DeleteRoom(roomId)
+			} else {
+				QuitMatch(a)
+			}
 		}
-		delete(Agent2Room, a)
 	}
-	delete(Users, a)
 }
 
 func rpcLogin(args []interface{}) {

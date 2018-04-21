@@ -92,6 +92,10 @@ func (hf *HealFlower) SubHp(damage float64, room Room) {
 }
 
 func (hf *HealFlower) TakeAction(room *Room) {
+	hf.Invincible = true
+	timer := time.NewTimer(time.Second)
+	<-timer.C
+	hf.Invincible = false
 	quit := make(chan int)
 	go func(quit chan int) {
 		ticker := time.NewTicker(hf.Duration)
@@ -120,7 +124,7 @@ func (hf *HealFlower) TakeAction(room *Room) {
 				}
 			}
 		case <-quit:
-			if !HasMiddle(hf.ID, room) {
+			if room.Closed || !HasMiddle(hf.ID, room) {
 				return
 			}
 			room.DeleteMiddle(hf.ID)
@@ -176,11 +180,15 @@ func (bt *BarrierTree) SubHp(damage float64, room Room) {
 }
 
 func (bt *BarrierTree) TakeAction(room *Room) {
+	bt.Invincible = true
+	timer := time.NewTimer(time.Second)
+	<-timer.C
+	bt.Invincible = false
 	ticker := time.NewTicker(bt.Duration)
 
 	select {
 	case <-ticker.C:
-		if HasMiddle(bt.ID, room) {
+		if !room.Closed || HasMiddle(bt.ID, room) {
 			room.DeleteMiddle(bt.ID)
 			for aa := range room.Players {
 				aa.WriteMsg(&msg.DeleteMiddle{bt.ID})
@@ -197,19 +205,24 @@ type Resource struct {
 
 func (r *Resource) TakeAction(room *Room) {
 	ticker := time.NewTicker(r.Duration)
+	ticker2 := time.NewTicker(time.Second * 5)
 
 	for {
 		select {
 		case <-ticker.C:
-			if HasMiddle(r.ID, room) {
+			if !room.Closed || HasMiddle(r.ID, room) {
+				log.Debug("资源 %d 销毁", r.ID)
 				room.DeleteMiddle(r.ID)
 				for aa := range room.Players {
-					aa.WriteMsg(&msg.DeleteMiddle{
-						r.ID,
-					})
+					aa.WriteMsg(&msg.DeleteMiddle{r.ID,})
 				}
 			}
 			return
+		case <-ticker2.C:
+			if room.Closed || !HasMiddle(r.ID, room) {
+				log.Debug("资源 %d 删除", r.ID)
+				return
+			}
 		}
 	}
 }
@@ -321,6 +334,10 @@ func (rt *ResourceTree) SubHp(damage float64, room Room) {
 }
 
 func (rt *ResourceTree) TakeAction(room *Room) {
+	rt.Invincible = true
+	timer := time.NewTimer(time.Second)
+	<-timer.C
+	rt.Invincible = false
 	quit := make(chan int, 1)
 	go func(chan int) {
 		ticker1 := time.NewTicker(rt.Duration)
@@ -334,6 +351,10 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 		ticker2 := time.NewTicker(rt.Interval)
 		select {
 		case <-ticker2.C:
+			if room.Closed {
+				log.Debug("房间%d关闭-资源树销毁", room.RoomId)
+				return
+			}
 			radius := rt.Radius
 			resourceTF := getRandonTFInCircle(radius, rt.GetSelfRadius(), *rt.GetTF())
 			rand.Seed(time.Now().Unix())
@@ -341,7 +362,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 			if randi < 30 {
 				resource := NewGold(room.Count+1, resourceTF)
 				room.Count += 1
-				log.Debug("rt create gold %d", resource.ID)
+				log.Debug("资源树生成金币 %d", resource.ID)
 				go resource.TakeAction(room)
 				room.SetMiddle(resource.ID, resource)
 				for aa := range room.Players {
@@ -354,7 +375,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 			} else if randi < 60 {
 				resource := NewBlood(room.Count+1, resourceTF)
 				room.Count += 1
-				log.Debug("rt create blood %d", resource.ID)
+				log.Debug("资源树生成血包 %d", resource.ID)
 				go resource.TakeAction(room)
 				room.SetMiddle(resource.ID, resource)
 				for aa := range room.Players {
@@ -367,7 +388,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 			} else {
 				resource := NewMana(room.Count+1, resourceTF)
 				room.Count += 1
-				log.Debug("rt create mana %d", resource.ID)
+				log.Debug("资源树生成蓝包 %d", resource.ID)
 				go resource.TakeAction(room)
 				room.SetMiddle(resource.ID, resource)
 				for aa := range room.Players {
@@ -380,7 +401,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 			}
 
 		case <-quit:
-			if HasMiddle(rt.ID, room) {
+			if !room.Closed || HasMiddle(rt.ID, room) {
 				room.DeleteMiddle(rt.ID)
 				for aa := range room.Players {
 					aa.WriteMsg(&msg.DeleteMiddle{
@@ -433,7 +454,7 @@ func (eb *ElectricBall) UpdateBallPosition(tf msg.TFServer) {
 func (eb *ElectricBall) TakeAction(room *Room) {
 	ticker := time.NewTicker(eb.Duration)
 	<-ticker.C
-	if HasMiddle(eb.ID, room) {
+	if !room.Closed || HasMiddle(eb.ID, room) {
 		room.DeleteMiddle(eb.ID)
 		for aa := range room.Players {
 			aa.WriteMsg(&msg.DeleteMiddle{
@@ -475,9 +496,7 @@ func (sb *StraightBall) TakeAction(room *Room) {
 
 	select {
 	case <-ticker.C:
-		if _, ok := room.GetMiddle(sb.ID); !ok {
-			return
-		} else {
+		if !room.Closed || HasMiddle(sb.ID, room) {
 			room.DeleteMiddle(sb.ID)
 			for aa := range room.Players {
 				aa.WriteMsg(&msg.DeleteMiddle{sb.ID})
@@ -527,7 +546,7 @@ func (iw *IceWall) TakeAction(room *Room) {
 		ticker := time.NewTicker(iw.Duration)
 		select {
 		case <-ticker.C:
-			if HasMiddle(iw.ID, room) {
+			if !room.Closed || HasMiddle(iw.ID, room) {
 				room.DeleteMiddle(iw.ID)
 				for aa := range room.Players {
 					aa.WriteMsg(&msg.DeleteMiddle{
@@ -647,10 +666,12 @@ func (fs *FireSea) TakeAction_(room *Room, h *Hero) {
 					}
 				}
 			case <-quit:
-				room.DeleteMiddle(fs.ID)
-				log.Debug("delete fire sea")
-				for aa := range room.Players {
-					aa.WriteMsg(&msg.DeleteMiddle{fs.ID})
+				if !room.Closed || HasMiddle(fs.ID, room) {
+					room.DeleteMiddle(fs.ID)
+					log.Debug("delete fire sea")
+					for aa := range room.Players {
+						aa.WriteMsg(&msg.DeleteMiddle{fs.ID})
+					}
 				}
 				return
 			}

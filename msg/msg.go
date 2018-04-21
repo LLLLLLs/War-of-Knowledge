@@ -12,6 +12,7 @@ func init() {
 	Processor.Register(&LoginStat{})
 	Processor.Register(&Match{})
 	Processor.Register(&MatchStat{})
+	Processor.Register(&QuitMatch{})
 
 	Processor.Register(&MoneyLeft{})
 	Processor.Register(&UpdateBaseState{})
@@ -28,6 +29,7 @@ func init() {
 	Processor.Register(&UpdateHeroState{})
 	Processor.Register(&DeleteHero{})
 	Processor.Register(&GetResource{})
+	Processor.Register(&Upgrade{})
 
 	Processor.Register(&CreateMiddle{})
 	Processor.Register(&UpdateMiddleState{})
@@ -35,4 +37,6 @@ func init() {
 
 	Processor.Register(&Surrender{})
 	Processor.Register(&EndBattle{})
+
+	Processor.Register(&HeartBeat{})
 }

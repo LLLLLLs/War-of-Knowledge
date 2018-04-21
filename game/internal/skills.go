@@ -4,8 +4,8 @@ import (
 	"github.com/name5566/leaf/gate"
 	"server/msg"
 	"github.com/name5566/leaf/log"
-	"time"
 	"math"
+	"time"
 )
 
 var SkillMap = make(map[string]Skill)
@@ -44,6 +44,7 @@ func (s *Skill0000) InitSkill() {
 	s.Radius = 8.0
 }
 
+// 圆形AOE
 func (s *Skill0000) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	if h.MP < s.Cost {
 		a.WriteMsg(&msg.UseSkillInf{
@@ -68,7 +69,6 @@ func (s *Skill0000) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 		})
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
@@ -104,7 +104,6 @@ func (s *Skill0000) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 }
 
 type Skill0010 struct {
-	// 扇形冰
 	Cost   float64
 	Radius float64
 	Attack float64
@@ -116,6 +115,7 @@ func (s *Skill0010) InitSkill() {
 	s.Attack = 30
 }
 
+// 扇形冰
 func (s *Skill0010) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	if h.MP < s.Cost {
 		a.WriteMsg(&msg.UseSkillInf{
@@ -140,7 +140,6 @@ func (s *Skill0010) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 		})
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
@@ -207,7 +206,6 @@ func getAngle(tf1, tf2 msg.TFServer) float64 {
 }
 
 type Skill0011 struct {
-	// 一圈地形冰柱
 	Cost         float64
 	CastDistance float64
 }
@@ -217,6 +215,7 @@ func (s *Skill0011) InitSkill() {
 	s.CastDistance = 15.0
 }
 
+// 一圈地形冰柱
 func (s *Skill0011) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	distance := GetDistance(h.Transform, &tf)
 	if h.MP < s.Cost || distance > s.CastDistance {
@@ -239,7 +238,6 @@ func (s *Skill0011) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
@@ -259,7 +257,6 @@ func (s *Skill0011) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 }
 
 type Skill0020 struct {
-	//fire bottle
 	Cost         float64
 	CastDistance float64
 }
@@ -269,6 +266,7 @@ func (s *Skill0020) InitSkill() {
 	s.CastDistance = 15
 }
 
+// 火焰瓶
 func (s *Skill0020) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	distance := GetDistance(h.Transform, &tf)
 	if h.MP < s.Cost || distance > s.CastDistance {
@@ -290,7 +288,6 @@ func (s *Skill0020) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
@@ -310,7 +307,6 @@ func (s *Skill0020) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 }
 
 type Skill0100 struct {
-	// 电球
 	Cost float64
 }
 
@@ -318,6 +314,7 @@ func (s *Skill0100) InitSkill() {
 	s.Cost = 20.0
 }
 
+// 直射电球
 func (s *Skill0100) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	if h.MP < s.Cost {
 		a.WriteMsg(&msg.UseSkillInf{
@@ -339,7 +336,6 @@ func (s *Skill0100) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
@@ -359,7 +355,6 @@ func (s *Skill0100) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 }
 
 type Skill0110 struct {
-	// 周身三电球
 	Cost   float64
 	Radius float64
 }
@@ -369,6 +364,7 @@ func (s *Skill0110) InitSkill() {
 	s.Radius = 15.0
 }
 
+// 周身4电球
 func (s *Skill0110) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	if h.MP < s.Cost {
 		a.WriteMsg(&msg.UseSkillInf{
@@ -387,7 +383,6 @@ func (s *Skill0110) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
@@ -420,7 +415,6 @@ func (s *Skill0110) generateElectricBall(room *Room, h *Hero, tf msg.TFServer, n
 }
 
 type Skill0111 struct {
-	// 对敌方所有物体造成伤害
 	Cost   float64
 	Attack float64
 }
@@ -430,6 +424,7 @@ func (s *Skill0111) InitSkill() {
 	s.Attack = 50.0
 }
 
+// 对敌方所有物体造成伤害
 func (s *Skill0111) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	if h.MP < s.Cost {
 		a.WriteMsg(&msg.UseSkillInf{
@@ -439,10 +434,10 @@ func (s *Skill0111) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 			false,
 			tf,
 		})
-		log.Debug("fail")
+		log.Debug("技能0111释放失败")
 		return
 	}
-	log.Debug("success")
+	log.Debug("技能0111释放成功")
 	h.MP -= s.Cost
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UseSkillInf{
@@ -454,32 +449,26 @@ func (s *Skill0111) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 		})
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
 	}
 	go func(room *Room) {
 		enemy := GetEnemy(a, *room)
+		timer := time.NewTimer(time.Second * 4)
+		<-timer.C
 		for _, hero := range enemy.Heros {
 			damage := GetDamage(h.Attack, hero.Def, s.Attack)
-			ticker := time.NewTicker(time.Second * 4)
-			<-ticker.C
-			alive := false
 			for _, player := range room.Players {
-				_, ok := player.GetHeros(h.ID)
-				alive = ok
+				if _, ok := player.GetHeros(h.ID); ok {
+					hero.SubHP(damage, *room)
+				}
 			}
-			if !alive {
-				return
-			}
-			hero.SubHP(damage, *room)
 		}
 	}(room)
 }
 
 type Skill0200 struct {
-	// 种障碍树
 	Cost         float64
 	CastDistance float64
 }
@@ -489,6 +478,7 @@ func (s *Skill0200) InitSkill() {
 	s.CastDistance = 15.0
 }
 
+// 种障碍树
 func (s *Skill0200) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	distance := GetDistance(h.Transform, &tf)
 	if h.MP < s.Cost || distance > s.CastDistance {
@@ -510,7 +500,6 @@ func (s *Skill0200) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
@@ -530,7 +519,6 @@ func (s *Skill0200) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 }
 
 type Skill0210 struct {
-	// 种子周围回血
 	Cost         float64
 	CastDistance float64
 }
@@ -540,6 +528,7 @@ func (s *Skill0210) InitSkill() {
 	s.CastDistance = 20.0
 }
 
+// 种子周围回血
 func (s *Skill0210) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	distance := GetDistance(h.Transform, &tf)
 	if h.MP < s.Cost || distance > s.CastDistance {
@@ -561,7 +550,6 @@ func (s *Skill0210) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})
@@ -582,7 +570,6 @@ func (s *Skill0210) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 }
 
 type Skill0211 struct {
-	// 资源树
 	Cost         float64
 	CastDistance float64
 }
@@ -592,6 +579,7 @@ func (s *Skill0211) InitSkill() {
 	s.CastDistance = 20.0
 }
 
+// 资源树
 func (s *Skill0211) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	distance := GetDistance(h.Transform, &tf)
 	if h.MP < s.Cost || distance > s.CastDistance {
@@ -614,7 +602,6 @@ func (s *Skill0211) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	for aa := range room.Players {
 		aa.WriteMsg(&msg.UpdateHeroState{
 			h.ID,
-			h.Type,
 			h.HP,
 			h.MP,
 		})

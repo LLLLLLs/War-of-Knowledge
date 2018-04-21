@@ -27,17 +27,17 @@ func handleAuth(args []interface{}) {
 	log.Debug("call login from %v", a.RemoteAddr())
 	user, ok := gamedata.UsersMap[m.UserName]
 	if !ok {
-		log.Debug("account not exist")
+		log.Debug("账号不存在")
 		a.WriteMsg(&msg.LoginStat{
 			Status:   1,
-			Msg:      "account not exist",
+			Msg:      "账号不存在",
 			PlayerId: PlayerId,
 		})
 		return
 	} else if user.Login == true {
 		a.WriteMsg(&msg.LoginStat{
 			Status:   1,
-			Msg:      "account alredy login",
+			Msg:      "账号已登陆",
 			PlayerId: PlayerId,
 		})
 		return
@@ -50,7 +50,7 @@ func handleAuth(args []interface{}) {
 			PlayerId: PlayerId,
 		})
 		PlayerId += 1
-		log.Debug("user %s login success", m.UserName)
+		log.Debug("玩家 %s 登陆成功", m.UserName)
 		// 如果玩家还在战斗中则恢复战斗状态(断线重连)
 		if gamedata.UsersMap[m.UserName].InBattle == true {
 			game.ChanRPC.Go("RecoverBattle", a)
@@ -58,7 +58,7 @@ func handleAuth(args []interface{}) {
 	} else {
 		a.WriteMsg(&msg.LoginStat{
 			Status:   1,
-			Msg:      "account or password is wrong",
+			Msg:      "账号密码不匹配",
 			PlayerId: PlayerId,
 		})
 	}
