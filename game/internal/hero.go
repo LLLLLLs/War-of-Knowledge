@@ -76,10 +76,10 @@ func (p *Player) CreateHero(heroType string, id, which int) (*Hero, error) {
 			// Skills
 			HPMax:  400.0,
 			HP:     400.0,
-			HPHot:  1.0,
+			HPHot:  10.0,
 			MPMax:  100.0,
 			MP:     100.0,
-			MPHot:  10.0,
+			MPHot:  15.0,
 			Speed:  10.0,
 			Attack: 10.0,
 			Def:    10.0,
@@ -94,7 +94,7 @@ func (p *Player) CreateHero(heroType string, id, which int) (*Hero, error) {
 }
 
 func HealByHot(room Room, id int, a gate.Agent) {
-	ticker := time.NewTicker(time.Second * 1)
+	ticker := time.NewTicker(time.Second * 3)
 	p := room.Players[a]
 	for {
 		select {
@@ -128,7 +128,6 @@ func HealByHot(room Room, id int, a gate.Agent) {
 
 func (h *Hero) UpdatePosition(t msg.TFServer) {
 	h.Transform = &t
-	//log.Debug("Hero Position:%v,%v", h.Transform, *h.Transform)
 }
 
 func (h *Hero) SubHP(damage float64, room Room) {
