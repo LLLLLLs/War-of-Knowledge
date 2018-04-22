@@ -43,7 +43,8 @@ func loadUsers() {
 
 func init() {
 	loadUsers()
-	for k, v := range UsersMap {
-		log.Debug("%v %v", k, v)
-	}
+	log.Debug("玩家人数 %d", len(UsersMap))
+	//for k, v := range UsersMap {
+	//	//log.Debug("%v %v", k, v)
+	//}
 }

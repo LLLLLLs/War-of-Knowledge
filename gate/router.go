@@ -19,4 +19,12 @@ func init() {
 	msg.Processor.SetRouter(&msg.FireBottleCrash{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.Upgrade{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.HeartBeat{}, game.ChanRPC)
+
+	msg.Processor.SetRouter(&msg.CreateRoom{}, game.ChanRPC)
+	msg.Processor.SetRouter(&msg.GetRoomList{}, game.ChanRPC)
+	msg.Processor.SetRouter(&msg.EnterRoom{}, game.ChanRPC)
+	msg.Processor.SetRouter(&msg.ExitRoom{}, game.ChanRPC)
+	msg.Processor.SetRouter(&msg.StartBattle{}, game.ChanRPC)
+
+	msg.Processor.SetRouter(&msg.Test{}, game.ChanRPC)
 }

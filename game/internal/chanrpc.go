@@ -7,7 +7,6 @@ import (
 
 var (
 	Users      = make(map[gate.Agent]string)
-	Room2Agent = make(map[int][]gate.Agent)
 	Agent2Room = make(map[gate.Agent]int)
 )
 
@@ -27,16 +26,18 @@ func rpcCloseAgent(args []interface{}) {
 	}
 	if roomId, ok := Agent2Room[a]; ok {
 		if room, ok := GetRoom(roomId); ok {
-			//在room里增加 断线计时器 和 重连计时器
-			//TODO
-			if room.Matching == false {
+			if room.InBattle == true {
+				//在room里增加 断线计时器 和 重连计时器
+				//TODO
 				EndBattle(roomId, a)
-				delete(Agent2Room, a)
-				delete(Room2Agent, roomId)
 				delete(Users, a)
-				DeleteRoom(roomId)
-			} else {
+				DeleteRoom(roomId, a)
+				return
+			}
+			if room.Mode == Match {
 				QuitMatch(a)
+			} else {
+				ExitRoom(a, room)
 			}
 		}
 	}

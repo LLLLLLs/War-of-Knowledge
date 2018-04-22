@@ -1,21 +1,24 @@
 package internal
 
 import (
-	"math/rand"
 	"reflect"
-	"time"
-
 	"server/msg"
 
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/log"
-	"server/gamedata"
 	"fmt"
 )
 
 func init() {
 	handler(&msg.Match{}, handleMatch)
 	handler(&msg.QuitMatch{}, handleQuitMatch)
+
+	handler(&msg.CreateRoom{}, handleCreateRoom)
+	handler(&msg.GetRoomList{}, handleGetRoomList)
+	handler(&msg.EnterRoom{}, handleEnterRoom)
+	handler(&msg.ExitRoom{}, handleExitRoom)
+	handler(&msg.StartBattle{}, handleStartBattle)
+
 	handler(&msg.CreateHero{}, handleCreateHero)
 	handler(&msg.UpdatePosition{}, handleUpdatePosition)
 	handler(&msg.UseSkill{}, handleUseSkill)
@@ -25,6 +28,7 @@ func init() {
 	handler(&msg.FireBottleCrash{}, handleFireBottleCrash)
 	handler(&msg.Upgrade{}, handleUpgrade)
 
+	handler(&msg.Test{}, handleTest)
 }
 
 func handler(m interface{}, h interface{}) {
@@ -33,67 +37,32 @@ func handler(m interface{}, h interface{}) {
 
 func handleMatch(args []interface{}) {
 	a := args[1].(gate.Agent)
-	log.Debug("Call Match from %v", a.RemoteAddr())
-	room := new(Room)
-	lastRoom, ok := GetRoom(LastRoomId)
-	if !ok || lastRoom.PlayerCount == 2 {
-		roomId := LastRoomId
-		if ok {
-			roomId = LastRoomId + 1
-			LastRoomId += 1
-		}
-		room = NewRoom(roomId, fmt.Sprintf("房间_%d", roomId))
-		AddRoom(room)
-	} else {
-		room, ok = GetRoom(LastRoomId)
-		if !ok {
-			log.Debug("%v get room fail", a.RemoteAddr())
-			return
-		}
+	log.Debug("玩家 %s 匹配中...", Users[a])
+	room, ok := GetRoom(LastMatchId)
+	if !ok || room.PlayerCount == 2 {
+		roomId := LastRoomId + 1
+		LastRoomId += 1
+		LastMatchId = LastRoomId
+		room = NewRoom(roomId, fmt.Sprintf("房间_%d", roomId), Match, a)
 	}
-	Room2Agent[room.RoomId] = append(Room2Agent[room.RoomId], a)
-	Agent2Room[a] = room.RoomId
-	room.PlayerCount += 1
 	if room.PlayerCount == 1 {
 		a.WriteMsg(&msg.MatchStat{
 			Status: 1,
 			Msg:    "匹配中",
 		})
 	} else { // 匹配成功
-		rand.Seed(time.Now().Unix())
-		r := rand.Intn(100)
-		flag := 0
-		if r >= 50 {
-			flag = 1
-		}
-		for i, aa := range Room2Agent[room.RoomId] {
-			which := 0
-			if flag == i {
-				which = 1
-			}
-			player := NewPlayer(which)
-			room.Players[aa] = player
-			aa.WriteMsg(&msg.MatchStat{
-				Status:      0,
-				Msg:         "匹配成功",
-				RoomId:      LastRoomId,
-				WhichPlayer: which,
-			})
-			// 设置玩家信息为战斗中(用于断线重连)
-			gamedata.UsersMap[Users[aa]].InBattle = true
-			gamedata.UsersMap[Users[aa]].RoomId = LastRoomId
-		}
-		go room.StartBattle()
+		//UpdateRoomInfo(room)
+		StartBattle(room)
 	}
 }
 
 func handleCreateHero(args []interface{}) {
 	m := args[0].(*msg.CreateHero)
 	a := args[1].(gate.Agent)
-	log.Debug("call createHero from %v", a.RemoteAddr())
+	log.Debug("玩家 %s 创建英雄 %s", Users[a], m.HeroType)
 	room, ok := GetRoom(m.RoomId)
 	if !ok {
-		log.Debug("%v get room fail", a.RemoteAddr())
+		log.Debug("获取房间失败")
 		return
 	}
 	player := room.Players[a]
@@ -307,8 +276,9 @@ func handleFireBottleCrash(args []interface{}) {
 func handleSurrender(args []interface{}) {
 	m := args[0].(*msg.Surrender)
 	a := args[1].(gate.Agent)
-	log.Debug("call surrender from %v", a.RemoteAddr())
+	log.Debug("玩家 %s 投降", Users[a])
 	EndBattle(m.RoomId, a)
+	DeleteRoom(m.RoomId, a)
 }
 
 func handleUpgrade(args []interface{}) {
@@ -330,4 +300,100 @@ func handleUpgrade(args []interface{}) {
 func handleQuitMatch(args []interface{}) {
 	a := args[1].(gate.Agent)
 	QuitMatch(a)
+}
+
+func handleTest(args []interface{}) {
+	m := args[0].(*msg.Test)
+	log.Debug("测试数据 %v", m)
+	a := args[1].(gate.Agent)
+	a.WriteMsg(&msg.RoomInfo{
+		Msg:    "ok",
+		RoomId: 1,
+		Name:   "Test1",
+		Users: map[string]*msg.User{
+			"User1": {UserName: "User1"},
+			"User2": {UserName: "User2"},
+		},
+	})
+	a.WriteMsg(&msg.RoomInfo{
+		Msg:    "ok",
+		RoomId: 2,
+		Name:   "Test2",
+		Users: map[string]*msg.User{
+			"User2": {UserName: "User2"},
+		},
+	})
+}
+
+func handleGetRoomList(args []interface{}) {
+	m := args[0].(*msg.GetRoomList)
+	a := args[1].(gate.Agent)
+	log.Debug("正在获取第 %d 页...", m.PageNum)
+	roomList := []*msg.RoomInfo{}
+	pageNum := m.PageNum - 1
+	if len(RoomList) > (pageNum+1)*5 {
+		roomList = RoomList[pageNum*5 : (pageNum+1)*5]
+	} else if len(RoomList) > pageNum*5 {
+		roomList = RoomList[pageNum*5:]
+	}
+	log.Debug("房间列表 %v", roomList)
+	a.WriteMsg(&msg.RoomList{
+		RoomList: roomList,
+	})
+}
+
+func handleCreateRoom(args []interface{}) {
+	m := args[0].(*msg.CreateRoom)
+	a := args[1].(gate.Agent)
+	LastRoomId += 1
+	roomId := LastRoomId
+	room := NewRoom(roomId, m.Name, Spec, a)
+	UpdateRoomInfo(room)
+}
+
+func handleEnterRoom(args []interface{}) {
+	m := args[0].(*msg.EnterRoom)
+	a := args[1].(gate.Agent)
+	roomId := m.RoomId
+	room, ok := GetRoom(roomId)
+	if !ok {
+		a.WriteMsg(&msg.RoomInfo{
+			Msg: "房间已关闭,请刷新列表",
+		})
+		return
+	} else if room.PlayerCount == 2 || room.InBattle == true {
+		a.WriteMsg(&msg.RoomInfo{
+			Msg: "房间已满",
+		})
+		return
+	}
+	Agent2Room[a] = roomId
+	room.Users[Users[a]] = &msg.User{
+		UserName: Users[a],
+		KeyOwner: false,
+	}
+	room.PlayerCount += 1
+	room.Players[a] = nil
+	UpdateRoomInfo(room)
+}
+
+func handleExitRoom(args []interface{}) {
+	a := args[1].(gate.Agent)
+	ExitRoom(a, Rooms[Agent2Room[a]])
+}
+
+func handleStartBattle(args []interface{}) {
+	a := args[1].(gate.Agent)
+	room, ok := Rooms[Agent2Room[a]]
+	if !ok {
+		log.Debug("房间不存在,开启战斗失败")
+		return
+	}
+	if room.PlayerCount != 2 {
+		log.Debug("人数过少,开启战斗失败")
+		return
+	}
+	if room.Users[Users[a]].KeyOwner {
+		StartBattle(room)
+	}
 }

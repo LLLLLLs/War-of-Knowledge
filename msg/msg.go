@@ -14,6 +14,14 @@ func init() {
 	Processor.Register(&MatchStat{})
 	Processor.Register(&QuitMatch{})
 
+	Processor.Register(&CreateRoom{})
+	Processor.Register(&GetRoomList{})
+	Processor.Register(&RoomList{})
+	Processor.Register(&RoomInfo{})
+	Processor.Register(&EnterRoom{})
+	Processor.Register(&ExitRoom{})
+	Processor.Register(&StartBattle{})
+
 	Processor.Register(&MoneyLeft{})
 	Processor.Register(&UpdateBaseState{})
 
@@ -39,4 +47,5 @@ func init() {
 	Processor.Register(&EndBattle{})
 
 	Processor.Register(&HeartBeat{})
+	Processor.Register(&Test{})
 }

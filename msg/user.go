@@ -32,4 +32,5 @@ type MatchStat struct {
 
 type User struct {
 	UserName string `json:"userName"`
+	KeyOwner bool   `json:"keyOwner"`
 }

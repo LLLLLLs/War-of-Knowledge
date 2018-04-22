@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"fmt"
 	"github.com/name5566/leaf/gate"
 	"time"
 	"math/rand"
@@ -11,8 +10,14 @@ import (
 	"server/gamedata"
 )
 
+const (
+	Match = "匹配"
+	Spec  = "指定"
+)
+
 type Room struct {
 	Name        string
+	Users       map[string]*msg.User
 	Count       int // 物体数量,包括英雄与中立生物/地形
 	RoomId      int
 	Players     map[gate.Agent]*Player
@@ -20,7 +25,8 @@ type Room struct {
 	Middle      map[int]Middle
 	Lock        sync.Mutex
 	Closed      bool
-	Matching    bool
+	InBattle    bool
+	Mode        string
 }
 
 func (r *Room) GetMiddle(k int) (Middle, bool) {
@@ -42,13 +48,42 @@ func (r *Room) DeleteMiddle(k int) {
 	delete(r.Middle, k)
 }
 
-func (r *Room) StartBattle() {
-	r.Matching = false
+func (r *Room) StartMapEvent() {
+	r.InBattle = true
 	for agent, player := range r.Players {
 		go player.Base.GetMoneyByTime(agent)
 	}
 	go HealByHot(r)
 	r.RandomResource(time.Second*10, time.Second*5)
+}
+
+func StartBattle(room *Room) {
+	rand.Seed(time.Now().Unix())
+	r := rand.Intn(100)
+	flag := 0
+	i := 0
+	if r >= 50 {
+		flag = 1
+	}
+	for aa := range room.Players {
+		which := 0
+		if flag == i {
+			which = 1
+		}
+		player := NewPlayer(which)
+		room.Players[aa] = player
+		aa.WriteMsg(&msg.MatchStat{
+			Status:      0,
+			Msg:         "开始战斗",
+			RoomId:      room.RoomId,
+			WhichPlayer: which,
+		})
+		// 设置玩家信息为战斗中(用于断线重连)
+		gamedata.UsersMap[Users[aa]].InBattle = true
+		gamedata.UsersMap[Users[aa]].RoomId = LastRoomId
+		i += 1
+	}
+	go room.StartMapEvent()
 }
 
 func EndBattle(roomId int, lose gate.Agent) {
@@ -58,8 +93,6 @@ func EndBattle(roomId int, lose gate.Agent) {
 		return
 	}
 	room.Closed = true
-	delete(Room2Agent, roomId)
-	delete(Rooms, roomId)
 	for aa, pp := range room.Players {
 		pp.Base.Timer.Reset(time.Millisecond)
 		aa.WriteMsg(&msg.EndBattle{
@@ -99,17 +132,17 @@ func (r *Room) RandomResource(beforeTime, interval time.Duration) {
 					Type: gold.Type,
 				})
 			}
-			//log.Debug("room: %d create resource %d", r.RoomId, gold.ID)
 			go gold.TakeAction(r)
 		}
 	}
 
 }
 
-func NewRoom(roomId int, name string) *Room {
-	fmt.Println("newRoom:", roomId)
+func NewRoom(roomId int, name string, mode string, a gate.Agent) *Room {
+	log.Debug("新建 %s 房间 %d", mode, roomId)
 	room := Room{
 		Name:        name,
+		Users:       make(map[string]*msg.User),
 		Count:       2,
 		RoomId:      roomId,
 		Players:     make(map[gate.Agent]*Player),
@@ -117,8 +150,18 @@ func NewRoom(roomId int, name string) *Room {
 		Middle:      make(map[int]Middle),
 		Lock:        sync.Mutex{},
 		Closed:      false,
-		Matching:    true,
+		InBattle:    false,
+		Mode:        mode,
 	}
+	AddRoom(&room)
+	room.Players[a] = nil
+	Agent2Room[a] = room.RoomId
+	user := msg.User{
+		UserName: Users[a],
+		KeyOwner: mode == Spec,
+	}
+	room.Users[user.UserName] = &user
+	room.PlayerCount += 1
 	return &room
 }
 
@@ -126,31 +169,30 @@ func QuitMatch(a gate.Agent) {
 	if roomId, ok := Agent2Room[a]; ok {
 		if room, ok := GetRoom(roomId); ok {
 			if room.PlayerCount == 1 {
-				room.PlayerCount -= 1
-				delete(Agent2Room, a)
-				DeleteRoom(roomId)
-				delete(Room2Agent, roomId)
+				DeleteRoom(roomId, a)
 				log.Debug("退出成功,房间%d删除", roomId)
 				return
-			} else {
-				if room.Matching == false {
-					log.Debug("正在战斗中,无法退出匹配")
-					return
-				} else {
-					room.PlayerCount -= 1
-					delete(room.Players, a)
-					for aa := range room.Players {
-						aa.WriteMsg(&msg.RoomInfo{
-							RoomId: roomId,
-							Name:   room.Name,
-							Users: []msg.User{
-								{UserName: Users[a]},
-							},
-						})
-					}
-				}
 			}
 		}
 	}
 	log.Debug("获取房间失败")
+}
+
+func ExitRoom(a gate.Agent, room *Room) {
+	if room.PlayerCount == 1 {
+		DeleteRoom(room.RoomId, a)
+	} else {
+		room.PlayerCount -= 1
+		delete(Agent2Room, a)
+		delete(room.Players, a)
+		if room.Users[Users[a]].KeyOwner == true {
+			for aa, user := range room.Users {
+				if aa != Users[a] {
+					user.KeyOwner = true
+				}
+			}
+		}
+		delete(room.Users, Users[a])
+		UpdateRoomInfo(room)
+	}
 }

@@ -120,17 +120,40 @@ type Upgrade struct {
 	TypeNew string `json:"typeNew"`
 }
 
+type CreateRoom struct {
+	Name string
+}
+
 type GetRoomList struct {
+	PageNum int
 }
 
 type RoomInfo struct {
-	RoomId int    `json:"roomId"`
-	Name   string `json:"name"`
-	Users  []User `json:"users"`
+	Msg    string           `json:"msg"`
+	RoomId int              `json:"roomId"`
+	Name   string           `json:"name"`
+	Users  map[string]*User `json:"users"`
+}
+
+type RoomList struct {
+	RoomList []*RoomInfo `json:"roomList"`
+}
+
+type EnterRoom struct {
+	RoomId int `json:"roomId"`
 }
 
 type QuitMatch struct {
 }
 
+type ExitRoom struct {
+}
+
 type HeartBeat struct {
+}
+
+type Test struct {
+}
+
+type StartBattle struct {
 }
