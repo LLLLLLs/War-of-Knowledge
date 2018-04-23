@@ -112,7 +112,7 @@ func EndBattle(roomId int, lose gate.Agent) {
 		pp := room.Players[user]
 		pp.Base.Timer.Reset(time.Millisecond)
 		var isWin bool
-		if (*aa) == lose {
+		if aa == nil || (*aa) == lose {
 			isWin = false
 			userData.Total += 1
 			userData.Defeat += 1
@@ -122,15 +122,17 @@ func EndBattle(roomId int, lose gate.Agent) {
 			userData.Victory += 1
 		}
 		userData.Rate = int(userData.Victory / userData.Total)
+		userData.InBattle = 0
 
 		effect, err := gamedata.Db.Update(userData, condi)
 		if err != nil || int(effect) != 1 {
 			log.Debug("更新数据失败")
 		}
+		gamedata.Db.Id(userData.Id).Cols("in_battle").Update(userData)
 		(*aa).WriteMsg(&msg.EndBattle{
 			IsWin: isWin,
 		})
-		gamedata.UsersMap[Users[*aa]].InBattle = 0
+		gamedata.UsersMap[Users[*aa]] = userData
 	}
 }
 
@@ -231,6 +233,7 @@ func NewRoom(roomId int, name string, mode string, a gate.Agent) *Room {
 	userName := Users[a]
 	room.Players[userName] = nil
 	Agent2Room[a] = room.RoomId
+	room.User2Agent[userName ] = &a
 	user := msg.User{
 		UserName: userName,
 		KeyOwner: mode == Spec,
