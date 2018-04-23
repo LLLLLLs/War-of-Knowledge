@@ -8,11 +8,15 @@ import (
 var Processor = json.NewProcessor()
 
 func init() {
+	Processor.Register(&Register{})
+	Processor.Register(&RegisterInfo{})
 	Processor.Register(&Login{})
 	Processor.Register(&LoginStat{})
 	Processor.Register(&Match{})
 	Processor.Register(&MatchStat{})
 	Processor.Register(&QuitMatch{})
+
+	Processor.Register(&GetUserInfo{})
 
 	Processor.Register(&CreateRoom{})
 	Processor.Register(&GetRoomList{})

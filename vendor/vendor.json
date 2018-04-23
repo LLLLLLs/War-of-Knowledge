@@ -3,6 +3,34 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "pcBWn7A/WCSI0u1oiryuAom6L5Q=",
+			"path": "appengine/cloudsql",
+			"revision": "138cbf02a83223cf40a1e4b7834cc0a732fb383b",
+			"revisionTime": "2018-03-28T21:30:08Z"
+		},
+		{
+			"checksumSHA1": "zFv0xWYC94gU6aClN7LlZF5EaAs=",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": "1a676ac6e4dce68e9303a1800773861350374a9e",
+			"revisionTime": "2018-03-08T10:03:10Z"
+		},
+		{
+			"checksumSHA1": "0fVyuUlVbC2wuaq8SSIR7HYH6As=",
+			"path": "github.com/go-xorm/builder",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "Da6ncO8Acl+8Tu4q+lzYvyAXFqg=",
+			"path": "github.com/go-xorm/core",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "6m2xcBaYruDxKlb02jGZYiVMwdU=",
+			"path": "github.com/go-xorm/xorm",
+			"revision": "e5c980f7b6464c279fc76a0585a1c26c90467d64",
+			"revisionTime": "2018-04-19T00:25:31Z"
+		},
+		{
 			"checksumSHA1": "tvVmLXS0w9aMKlZkVyiECxtbZXI=",
 			"path": "github.com/gorilla/websocket",
 			"revision": "eb925808374e5ca90c83401a40d711dc08c0c0f6",
@@ -87,6 +115,12 @@
 			"revisionTime": "2017-10-10T10:00:04Z"
 		},
 		{
+			"checksumSHA1": "W/pYxFe8/FHT10/wulwesJsOoUw=",
+			"path": "google.golang.org/appengine/cloudsql",
+			"revision": "0a24098c0ec68416ec050f567f75df563d6b231e",
+			"revisionTime": "2018-04-05T22:03:34Z"
+		},
+		{
 			"checksumSHA1": "tNdF4sMIyxsLPXhB7m7ppv8cL+M=",
 			"path": "server/base",
 			"revision": ""
@@ -132,5 +166,5 @@
 			"revision": ""
 		}
 	],
-	"rootPath": "War-of-Knowledge"
+	"rootPath": "server"
 }

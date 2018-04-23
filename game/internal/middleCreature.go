@@ -10,6 +10,8 @@ import (
 
 type Middle interface {
 	IsInvincible() bool
+	GetId() int
+	GetType() string
 	GetTF() *msg.TFServer
 	GetSelfRadius() float64
 	SubHp(damage float64, room Room)
@@ -31,6 +33,12 @@ type MiddleCreature struct {
 
 func (m *MiddleCreature) IsInvincible() bool {
 	return m.Invincible
+}
+func (m *MiddleCreature) GetId() int {
+	return m.ID
+}
+func (m *MiddleCreature) GetType() string {
+	return m.Type
 }
 
 func (m *MiddleCreature) GetTF() *msg.TFServer {
@@ -82,11 +90,14 @@ func (hf *HealFlower) SubHp(damage float64, room Room) {
 		hf.HP = 0
 		room.DeleteMiddle(hf.ID)
 	}
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateMiddleState{hf.ID, hf.HP})
-		aa.WriteMsg(&msg.Damage{Id: hf.ID, Damage: damage})
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateMiddleState{hf.ID, hf.HP})
+		(*aa).WriteMsg(&msg.Damage{Id: hf.ID, Damage: damage})
 		if hf.HP == 0 {
-			aa.WriteMsg(&msg.DeleteMiddle{hf.ID})
+			(*aa).WriteMsg(&msg.DeleteMiddle{hf.ID})
 		}
 	}
 }
@@ -115,11 +126,11 @@ func (hf *HealFlower) TakeAction(room *Room) {
 			if !HasMiddle(hf.ID, room) {
 				return
 			}
-			for aa, pp := range room.Players {
+			for _, pp := range room.Players {
 				for _, h := range pp.Heros {
 					distance := GetDistance(hf.TF, h.Transform)
 					if distance < hf.Radius {
-						h.Heal(hf.Heal, aa, *room, "HP")
+						h.Heal(hf.Heal, *room, "HP")
 					}
 				}
 			}
@@ -128,8 +139,11 @@ func (hf *HealFlower) TakeAction(room *Room) {
 				return
 			}
 			room.DeleteMiddle(hf.ID)
-			for aa := range room.Players {
-				aa.WriteMsg(&msg.DeleteMiddle{
+			for _, aa := range room.User2Agent {
+				if aa == nil {
+					continue
+				}
+				(*aa).WriteMsg(&msg.DeleteMiddle{
 					hf.ID,
 				})
 			}
@@ -170,11 +184,14 @@ func (bt *BarrierTree) SubHp(damage float64, room Room) {
 		bt.HP = 0
 		room.DeleteMiddle(bt.ID)
 	}
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateMiddleState{bt.ID, bt.HP})
-		aa.WriteMsg(&msg.Damage{Id: bt.ID, Damage: damage})
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateMiddleState{bt.ID, bt.HP})
+		(*aa).WriteMsg(&msg.Damage{Id: bt.ID, Damage: damage})
 		if bt.HP == 0 {
-			aa.WriteMsg(&msg.DeleteMiddle{bt.ID})
+			(*aa).WriteMsg(&msg.DeleteMiddle{bt.ID})
 		}
 	}
 }
@@ -190,8 +207,11 @@ func (bt *BarrierTree) TakeAction(room *Room) {
 	case <-ticker.C:
 		if !room.Closed || HasMiddle(bt.ID, room) {
 			room.DeleteMiddle(bt.ID)
-			for aa := range room.Players {
-				aa.WriteMsg(&msg.DeleteMiddle{bt.ID})
+			for _, aa := range room.User2Agent {
+				if aa == nil {
+					continue
+				}
+				(*aa).WriteMsg(&msg.DeleteMiddle{bt.ID})
 			}
 		}
 		return
@@ -213,8 +233,11 @@ func (r *Resource) TakeAction(room *Room) {
 			if !room.Closed || HasMiddle(r.ID, room) {
 				log.Debug("资源 %d 销毁", r.ID)
 				room.DeleteMiddle(r.ID)
-				for aa := range room.Players {
-					aa.WriteMsg(&msg.DeleteMiddle{r.ID,})
+				for _, aa := range room.User2Agent {
+					if aa == nil {
+						continue
+					}
+					(*aa).WriteMsg(&msg.DeleteMiddle{r.ID,})
 				}
 			}
 			return
@@ -324,11 +347,14 @@ func (rt *ResourceTree) SubHp(damage float64, room Room) {
 		rt.HP = 0
 		room.DeleteMiddle(rt.ID)
 	}
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateMiddleState{rt.ID, rt.HP})
-		aa.WriteMsg(&msg.Damage{Id: rt.ID, Damage: damage})
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateMiddleState{rt.ID, rt.HP})
+		(*aa).WriteMsg(&msg.Damage{Id: rt.ID, Damage: damage})
 		if rt.HP == 0 {
-			aa.WriteMsg(&msg.DeleteMiddle{rt.ID})
+			(*aa).WriteMsg(&msg.DeleteMiddle{rt.ID})
 		}
 	}
 }
@@ -356,7 +382,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 				return
 			}
 			radius := rt.Radius
-			resourceTF := getRandonTFInCircle(radius, rt.GetSelfRadius(), *rt.GetTF())
+			resourceTF := getRandomTFInCircle(radius, rt.GetSelfRadius(), *rt.GetTF())
 			rand.Seed(time.Now().Unix())
 			randi := rand.Intn(90)
 			if randi < 30 {
@@ -365,8 +391,11 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 				log.Debug("资源树生成金币 %d", resource.ID)
 				go resource.TakeAction(room)
 				room.SetMiddle(resource.ID, resource)
-				for aa := range room.Players {
-					aa.WriteMsg(&msg.CreateMiddle{
+				for _, aa := range room.User2Agent {
+					if aa == nil {
+						continue
+					}
+					(*aa).WriteMsg(&msg.CreateMiddle{
 						resource.ID,
 						*resource.TF,
 						resource.Type,
@@ -378,8 +407,11 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 				log.Debug("资源树生成血包 %d", resource.ID)
 				go resource.TakeAction(room)
 				room.SetMiddle(resource.ID, resource)
-				for aa := range room.Players {
-					aa.WriteMsg(&msg.CreateMiddle{
+				for _, aa := range room.User2Agent {
+					if aa == nil {
+						continue
+					}
+					(*aa).WriteMsg(&msg.CreateMiddle{
 						resource.ID,
 						*resource.TF,
 						resource.Type,
@@ -391,8 +423,11 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 				log.Debug("资源树生成蓝包 %d", resource.ID)
 				go resource.TakeAction(room)
 				room.SetMiddle(resource.ID, resource)
-				for aa := range room.Players {
-					aa.WriteMsg(&msg.CreateMiddle{
+				for _, aa := range room.User2Agent {
+					if aa == nil {
+						continue
+					}
+					(*aa).WriteMsg(&msg.CreateMiddle{
 						resource.ID,
 						*resource.TF,
 						resource.Type,
@@ -403,8 +438,11 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 		case <-quit:
 			if !room.Closed || HasMiddle(rt.ID, room) {
 				room.DeleteMiddle(rt.ID)
-				for aa := range room.Players {
-					aa.WriteMsg(&msg.DeleteMiddle{
+				for _, aa := range room.User2Agent {
+					if aa == nil {
+						continue
+					}
+					(*aa).WriteMsg(&msg.DeleteMiddle{
 						rt.ID,
 					})
 				}
@@ -414,7 +452,7 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 	}
 }
 
-func getRandonTFInCircle(radius, selfRadius float64, tf msg.TFServer) msg.TFServer {
+func getRandomTFInCircle(radius, selfRadius float64, tf msg.TFServer) msg.TFServer {
 	rand.Seed(time.Now().Unix())
 	angle := float64(rand.Intn(360))
 	length := float64(rand.Intn(int(radius-selfRadius))) + selfRadius
@@ -456,8 +494,11 @@ func (eb *ElectricBall) TakeAction(room *Room) {
 	<-ticker.C
 	if !room.Closed || HasMiddle(eb.ID, room) {
 		room.DeleteMiddle(eb.ID)
-		for aa := range room.Players {
-			aa.WriteMsg(&msg.DeleteMiddle{
+		for _, aa := range room.User2Agent {
+			if aa == nil {
+				continue
+			}
+			(*aa).WriteMsg(&msg.DeleteMiddle{
 				eb.ID,
 			})
 		}
@@ -498,8 +539,11 @@ func (sb *StraightBall) TakeAction(room *Room) {
 	case <-ticker.C:
 		if !room.Closed || HasMiddle(sb.ID, room) {
 			room.DeleteMiddle(sb.ID)
-			for aa := range room.Players {
-				aa.WriteMsg(&msg.DeleteMiddle{sb.ID})
+			for _, aa := range room.User2Agent {
+				if aa == nil {
+					continue
+				}
+				(*aa).WriteMsg(&msg.DeleteMiddle{sb.ID})
 			}
 		}
 	}
@@ -532,11 +576,14 @@ func (iw *IceWall) SubHp(damage float64, room Room) {
 		iw.HP = 0
 		room.DeleteMiddle(iw.ID)
 	}
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateMiddleState{iw.ID, iw.HP})
-		aa.WriteMsg(&msg.Damage{Id: iw.ID, Damage: damage})
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateMiddleState{iw.ID, iw.HP})
+		(*aa).WriteMsg(&msg.Damage{Id: iw.ID, Damage: damage})
 		if iw.HP == 0 {
-			aa.WriteMsg(&msg.DeleteMiddle{iw.ID})
+			(*aa).WriteMsg(&msg.DeleteMiddle{iw.ID})
 		}
 	}
 }
@@ -548,8 +595,11 @@ func (iw *IceWall) TakeAction(room *Room) {
 		case <-ticker.C:
 			if !room.Closed || HasMiddle(iw.ID, room) {
 				room.DeleteMiddle(iw.ID)
-				for aa := range room.Players {
-					aa.WriteMsg(&msg.DeleteMiddle{
+				for _, aa := range room.User2Agent {
+					if aa == nil {
+						continue
+					}
+					(*aa).WriteMsg(&msg.DeleteMiddle{
 						iw.ID,
 					})
 				}
@@ -584,9 +634,12 @@ func (fb *FireBottle) UpdateFireBottle(tf msg.TFServer, room *Room) {
 	if distace < 0.5 {
 		room.DeleteMiddle(fb.ID)
 		firesea := NewFireSea(room.Count+1, *fb.Target)
-		for aa := range room.Players {
-			aa.WriteMsg(&msg.DeleteMiddle{ID: fb.ID})
-			aa.WriteMsg(&msg.CreateMiddle{
+		for _, aa := range room.User2Agent {
+			if aa == nil {
+				continue
+			}
+			(*aa).WriteMsg(&msg.DeleteMiddle{ID: fb.ID})
+			(*aa).WriteMsg(&msg.CreateMiddle{
 				ID:   firesea.ID,
 				TF:   *firesea.TF,
 				Type: firesea.Type,
@@ -669,8 +722,11 @@ func (fs *FireSea) TakeAction_(room *Room, h *Hero) {
 				if !room.Closed || HasMiddle(fs.ID, room) {
 					room.DeleteMiddle(fs.ID)
 					log.Debug("delete fire sea")
-					for aa := range room.Players {
-						aa.WriteMsg(&msg.DeleteMiddle{fs.ID})
+					for _, aa := range room.User2Agent {
+						if aa == nil {
+							continue
+						}
+						(*aa).WriteMsg(&msg.DeleteMiddle{fs.ID})
 					}
 				}
 				return

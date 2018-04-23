@@ -7,9 +7,12 @@ import (
 )
 
 func init() {
+	msg.Processor.SetRouter(&msg.Register{}, login.ChanRPC)
 	msg.Processor.SetRouter(&msg.Login{}, login.ChanRPC)
 	msg.Processor.SetRouter(&msg.Match{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.QuitMatch{}, game.ChanRPC)
+	msg.Processor.SetRouter(&msg.GetUserInfo{}, game.ChanRPC)
+
 	msg.Processor.SetRouter(&msg.CreateHero{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.UpdatePosition{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.UseSkill{}, game.ChanRPC)

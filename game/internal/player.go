@@ -78,13 +78,17 @@ func (b *Base) SubHP(damage float64, which int, room Room) {
 	if b.Hp <= 0 {
 		b.Hp = 0
 	}
-	for aa, pp := range room.Players {
-		aa.WriteMsg(&msg.UpdateBaseState{
+	for user, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateBaseState{
 			Which: which,
 			Hp:    b.Hp,
 		})
+		pp := room.Players[user]
 		if b.Hp == 0 && which == pp.Which {
-			EndBattle(room.RoomId, aa)
+			EndBattle(room.RoomId, *aa)
 		}
 	}
 }

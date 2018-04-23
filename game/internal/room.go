@@ -17,10 +17,11 @@ const (
 
 type Room struct {
 	Name        string
-	Users       map[string]*msg.User
-	Count       int // 物体数量,包括英雄与中立生物/地形
+	Users       map[string]*msg.User   // userName -> User
+	User2Agent  map[string]*gate.Agent // userName -> Agent
+	Players     map[string]*Player     // userName -> Player
+	Count       int                    // 物体数量,包括英雄与中立生物/地形
 	RoomId      int
-	Players     map[gate.Agent]*Player
 	PlayerCount int
 	Middle      map[int]Middle
 	Lock        sync.Mutex
@@ -50,8 +51,9 @@ func (r *Room) DeleteMiddle(k int) {
 
 func (r *Room) StartMapEvent() {
 	r.InBattle = true
-	for agent, player := range r.Players {
-		go player.Base.GetMoneyByTime(agent)
+	for user, aa := range r.User2Agent {
+		pp := r.Players[user]
+		go pp.Base.GetMoneyByTime(*aa)
 	}
 	go HealByHot(r)
 	r.RandomResource(time.Second*10, time.Second*5)
@@ -65,23 +67,27 @@ func StartBattle(room *Room) {
 	if r >= 50 {
 		flag = 1
 	}
-	for aa := range room.Players {
+	for user, aa := range room.User2Agent {
 		which := 0
 		if flag == i {
 			which = 1
 		}
 		player := NewPlayer(which)
-		room.Players[aa] = player
-		aa.WriteMsg(&msg.MatchStat{
+		room.Players[user] = player
+		(*aa).WriteMsg(&msg.MatchStat{
 			Status:      0,
 			Msg:         "开始战斗",
 			RoomId:      room.RoomId,
 			WhichPlayer: which,
 		})
 		// 设置玩家信息为战斗中(用于断线重连)
-		gamedata.UsersMap[Users[aa]].InBattle = true
-		gamedata.UsersMap[Users[aa]].RoomId = LastRoomId
+		gamedata.UsersMap[Users[*aa]].InBattle = 1
+		gamedata.UsersMap[Users[*aa]].RoomId = room.RoomId
 		i += 1
+		cond := gamedata.UserData{
+			Id: gamedata.UsersMap[Users[*aa]].Id,
+		}
+		gamedata.Db.Update(gamedata.UsersMap[Users[*aa]], cond)
 	}
 	go room.StartMapEvent()
 }
@@ -93,12 +99,76 @@ func EndBattle(roomId int, lose gate.Agent) {
 		return
 	}
 	room.Closed = true
-	for aa, pp := range room.Players {
+	for user, aa := range room.User2Agent {
+		userData := new(gamedata.UserData)
+		has, err := gamedata.Db.Where("name=?", user).Get(userData)
+		if err != nil || !has {
+			log.Debug("获取角色数据失败")
+			return
+		}
+		condi := gamedata.UserData{
+			Id: userData.Id,
+		}
+		pp := room.Players[user]
 		pp.Base.Timer.Reset(time.Millisecond)
-		aa.WriteMsg(&msg.EndBattle{
-			IsWin: aa != lose,
+		var isWin bool
+		if (*aa) == lose {
+			isWin = false
+			userData.Total += 1
+			userData.Defeat += 1
+		} else {
+			isWin = true
+			userData.Total += 1
+			userData.Victory += 1
+		}
+		userData.Rate = int(userData.Victory / userData.Total)
+
+		effect, err := gamedata.Db.Update(userData, condi)
+		if err != nil || int(effect) != 1 {
+			log.Debug("更新数据失败")
+		}
+		(*aa).WriteMsg(&msg.EndBattle{
+			IsWin: isWin,
 		})
-		gamedata.UsersMap[Users[aa]].InBattle = false
+		gamedata.UsersMap[Users[*aa]].InBattle = 0
+	}
+}
+
+func RecoverBattle(a gate.Agent, room *Room) {
+	userName := Users[a]
+	room.User2Agent[userName] = &a
+	a.WriteMsg(&msg.MatchStat{
+		Status:      0,
+		Msg:         "重连成功",
+		RoomId:      room.RoomId,
+		WhichPlayer: room.Players[userName].Which,
+	})
+	for _, pp := range room.Players {
+		for _, hero := range pp.Heros {
+			a.WriteMsg(&msg.CreateHeroInf{
+				Msg:         "ok",
+				HeroType:    hero.Type,
+				TFServer:    *hero.Transform,
+				WhichPlayer: pp.Which,
+				ID:          hero.ID,
+				HPMax:       hero.HPMax,
+				HP:          hero.HP,
+				HPHot:       hero.HPHot,
+				MPMax:       hero.MPMax,
+				MP:          hero.MP,
+				MPHot:       hero.MPHot,
+				Speed:       hero.Speed,
+				Attack:      hero.Attack,
+				Def:         hero.Def,
+			})
+		}
+	}
+	for _, middle := range room.Middle {
+		a.WriteMsg(&msg.CreateMiddle{
+			ID:   middle.GetId(),
+			TF:   *middle.GetTF(),
+			Type: middle.GetType(),
+		})
 	}
 }
 
@@ -125,8 +195,11 @@ func (r *Room) RandomResource(beforeTime, interval time.Duration) {
 			gold := NewGold(r.Count+1, tf)
 			r.Count += 1
 			r.SetMiddle(gold.ID, gold)
-			for aa := range r.Players {
-				aa.WriteMsg(&msg.CreateMiddle{
+			for _, aa := range r.User2Agent {
+				if aa == nil {
+					continue
+				}
+				(*aa).WriteMsg(&msg.CreateMiddle{
 					ID:   gold.ID,
 					TF:   *gold.TF,
 					Type: gold.Type,
@@ -143,9 +216,10 @@ func NewRoom(roomId int, name string, mode string, a gate.Agent) *Room {
 	room := Room{
 		Name:        name,
 		Users:       make(map[string]*msg.User),
+		User2Agent:  make(map[string]*gate.Agent),
+		Players:     make(map[string]*Player),
 		Count:       2,
 		RoomId:      roomId,
-		Players:     make(map[gate.Agent]*Player),
 		PlayerCount: 0,
 		Middle:      make(map[int]Middle),
 		Lock:        sync.Mutex{},
@@ -154,13 +228,14 @@ func NewRoom(roomId int, name string, mode string, a gate.Agent) *Room {
 		Mode:        mode,
 	}
 	AddRoom(&room)
-	room.Players[a] = nil
+	userName := Users[a]
+	room.Players[userName] = nil
 	Agent2Room[a] = room.RoomId
 	user := msg.User{
-		UserName: Users[a],
+		UserName: userName,
 		KeyOwner: mode == Spec,
 	}
-	room.Users[user.UserName] = &user
+	room.Users[userName] = &user
 	room.PlayerCount += 1
 	return &room
 }
@@ -184,7 +259,7 @@ func ExitRoom(a gate.Agent, room *Room) {
 	} else {
 		room.PlayerCount -= 1
 		delete(Agent2Room, a)
-		delete(room.Players, a)
+		delete(room.Players, Users[a])
 		if room.Users[Users[a]].KeyOwner == true {
 			for aa, user := range room.Users {
 				if aa != Users[a] {

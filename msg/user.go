@@ -4,6 +4,15 @@ import (
 	_ "encoding/json"
 )
 
+type Register struct {
+	Name     string
+	Password string
+}
+
+type RegisterInfo struct {
+	Msg string `json:"msg"`
+}
+
 // req
 type Login struct {
 	UserName string
@@ -15,6 +24,9 @@ type LoginStat struct {
 	Status   int    `json:"status"`
 	Msg      string `json:"msg"`
 	PlayerId int    `json:"playerId,omitempty"`
+}
+
+type GetUserInfo struct {
 }
 
 // req
@@ -32,5 +44,10 @@ type MatchStat struct {
 
 type User struct {
 	UserName string `json:"userName"`
+	Photo    int    `json:"photo"`
+	Total    int    `json:"total"`
+	Victory  int    `json:"victory"`
+	Defeat   int    `json:"defeat"`
+	Rate     int    `json:"rate"`
 	KeyOwner bool   `json:"keyOwner"`
 }

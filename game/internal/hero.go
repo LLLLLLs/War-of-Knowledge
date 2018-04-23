@@ -118,9 +118,9 @@ func (p *Player) CreateHero(heroType string, id, which int, tf *msg.TFServer) (*
 
 func (p *Player) Upgrade(room *Room, id int, old, new string) {
 	var a gate.Agent
-	for aa, pp := range room.Players {
+	for user, pp := range room.Players {
 		if pp == p {
-			a = aa
+			a = (*room.User2Agent[user])
 		}
 	}
 	if len(old) != 3 || len(new) != 3 || (old[0:2] != new[0:2]) || (new[2] <= old[2]) {
@@ -150,9 +150,12 @@ func (p *Player) Upgrade(room *Room, id int, old, new string) {
 	room.Count += 1
 	p.DeleteHero(id)
 	p.SetHeros(newh.ID, newh)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.DeleteHero{ID: id})
-		aa.WriteMsg(&msg.CreateHeroInf{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.DeleteHero{ID: id})
+		(*aa).WriteMsg(&msg.CreateHeroInf{
 			Msg:         "ok",
 			HeroType:    newh.Type,
 			TFServer:    *newh.Transform,
@@ -194,8 +197,11 @@ func HealByHot(room *Room) {
 					if h.MP > h.MPMax {
 						h.MP = h.MPMax
 					}
-					for aa := range room.Players {
-						aa.WriteMsg(&msg.UpdateHeroState{
+					for _, aa := range room.User2Agent {
+						if aa == nil {
+							continue
+						}
+						(*aa).WriteMsg(&msg.UpdateHeroState{
 							h.ID,
 							h.HP,
 							h.MP,
@@ -216,26 +222,34 @@ func (h *Hero) SubHP(damage float64, room Room) {
 	if h.HP <= 0 {
 		h.HP = 0
 	}
-	for aa, pp := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
-			Id: h.ID,
-			Hp: h.HP,
-			Mp: h.MP,
-		})
-		aa.WriteMsg(&msg.Damage{
-			Id:     h.ID,
-			Damage: damage,
-		})
+	for user, pp := range room.Players {
+		aa := room.User2Agent[user]
+		var flag = (aa != nil)
+
 		if h.HP == 0 {
 			if _, ok := pp.GetHeros(h.ID); ok {
 				pp.DeleteHero(h.ID)
 			}
-			aa.WriteMsg(&msg.DeleteHero{h.ID})
+			if flag {
+				(*aa).WriteMsg(&msg.DeleteHero{h.ID})
+			}
 		}
+		if !flag {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
+			Id: h.ID,
+			Hp: h.HP,
+			Mp: h.MP,
+		})
+		(*aa).WriteMsg(&msg.Damage{
+			Id:     h.ID,
+			Damage: damage,
+		})
 	}
 }
 
-func (h *Hero) Heal(heal float64, a gate.Agent, room Room, t string) {
+func (h *Hero) Heal(heal float64, room Room, t string) {
 	if t == "HP" {
 		h.HP += heal
 		if h.HP > h.HPMax {
@@ -247,8 +261,11 @@ func (h *Hero) Heal(heal float64, a gate.Agent, room Room, t string) {
 			h.MP = h.MPMax
 		}
 	}
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			Id: h.ID,
 			Hp: h.HP,
 			Mp: h.MP,

@@ -7,11 +7,13 @@ import (
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/log"
 	"fmt"
+	"server/gamedata"
 )
 
 func init() {
 	handler(&msg.Match{}, handleMatch)
 	handler(&msg.QuitMatch{}, handleQuitMatch)
+	handler(&msg.GetUserInfo{}, handleGetUserInfo)
 
 	handler(&msg.CreateRoom{}, handleCreateRoom)
 	handler(&msg.GetRoomList{}, handleGetRoomList)
@@ -59,13 +61,14 @@ func handleMatch(args []interface{}) {
 func handleCreateHero(args []interface{}) {
 	m := args[0].(*msg.CreateHero)
 	a := args[1].(gate.Agent)
+	userName := Users[a]
 	log.Debug("玩家 %s 创建英雄 %s", Users[a], m.HeroType)
 	room, ok := GetRoom(m.RoomId)
 	if !ok {
 		log.Debug("获取房间失败")
 		return
 	}
-	player := room.Players[a]
+	player := room.Players[userName]
 	which := int(player.Which)
 	hero, err := player.CreateHero(m.HeroType, room.Count+1, which, nil)
 	if err != nil {
@@ -78,8 +81,11 @@ func handleCreateHero(args []interface{}) {
 		log.Debug("创建英雄成功,%s", m.HeroType)
 		player.SetHeros(hero.ID, hero)
 		room.Count += 1
-		for aa := range room.Players {
-			aa.WriteMsg(&msg.CreateHeroInf{
+		for _, aa := range room.User2Agent {
+			if aa == nil {
+				continue
+			}
+			(*aa).WriteMsg(&msg.CreateHeroInf{
 				Msg:         "ok",
 				HeroType:    hero.Type,
 				TFServer:    *hero.Transform,
@@ -110,13 +116,16 @@ func handleUpdatePosition(args []interface{}) {
 		log.Debug("UpdatePosition: %v 房间不存在", a.RemoteAddr())
 		return
 	}
-	p := room.Players[a]
+	p := room.Players[Users[a]]
 	h, ok := p.GetHeros(m.Id)
 	if ok {
 		h.UpdatePosition(m.TfServer)
-		for aa := range room.Players {
-			if aa != a {
-				aa.WriteMsg(m)
+		for _, aa := range room.User2Agent {
+			if aa == nil {
+				continue
+			}
+			if (*aa) != a {
+				(*aa).WriteMsg(m)
 			}
 		}
 	} else {
@@ -143,7 +152,7 @@ func handleUseSkill(args []interface{}) {
 		log.Debug("%v get room fail", a.RemoteAddr())
 		return
 	}
-	p := room.Players[a]
+	p := room.Players[Users[a]]
 	h, ok := p.GetHeros(m.Id)
 	if !ok {
 		log.Debug("can't get hero")
@@ -162,7 +171,7 @@ func handleGetResource(args []interface{}) {
 		log.Debug("%v get room fail", a.RemoteAddr())
 		return
 	}
-	p := room.Players[a]
+	p := room.Players[Users[a]]
 	item, ok := room.GetMiddle(m.ItemId)
 	if !ok {
 		log.Debug("no middle id:%d", m.ItemId)
@@ -177,17 +186,20 @@ func handleGetResource(args []interface{}) {
 		if !ok {
 			log.Debug("no hero id:%d", m.HeroId)
 		}
-		hero.Heal(float64(middle.value), a, *room, "HP")
+		hero.Heal(float64(middle.value), *room, "HP")
 	case *Mana:
 		hero, ok := p.GetHeros(m.HeroId)
 		if !ok {
 			log.Debug("no hero id:%d", m.HeroId)
 		}
-		hero.Heal(float64(middle.value), a, *room, "MP")
+		hero.Heal(float64(middle.value), *room, "MP")
 	}
 	room.DeleteMiddle(m.ItemId)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.DeleteMiddle{m.ItemId})
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.DeleteMiddle{m.ItemId})
 	}
 }
 
@@ -200,7 +212,7 @@ func handleSkillCrash(args []interface{}) {
 		log.Debug("%v get room fail", a.RemoteAddr())
 		return
 	}
-	p := room.Players[a]
+	p := room.Players[Users[a]]
 	enemy := GetEnemy(a, *room)
 	fromHero, _ := p.GetHeros(m.FromHeroId)
 	fromItem, ok := room.GetMiddle(m.FromItemId)
@@ -238,8 +250,11 @@ func handleSkillCrash(args []interface{}) {
 		}
 	}
 	room.DeleteMiddle(m.FromItemId)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.DeleteMiddle{m.FromItemId})
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.DeleteMiddle{m.FromItemId})
 	}
 }
 
@@ -259,9 +274,12 @@ func handleFireBottleCrash(args []interface{}) {
 	room.DeleteMiddle(m.ItemId)
 	if v, ok := fb.(*FireBottle); ok {
 		firesea := NewFireSea(room.Count+1, *v.TF)
-		for aa := range room.Players {
-			aa.WriteMsg(&msg.DeleteMiddle{ID: v.ID})
-			aa.WriteMsg(&msg.CreateMiddle{
+		for _, aa := range room.User2Agent {
+			if aa == nil {
+				continue
+			}
+			(*aa).WriteMsg(&msg.DeleteMiddle{ID: v.ID})
+			(*aa).WriteMsg(&msg.CreateMiddle{
 				ID:   firesea.ID,
 				TF:   *firesea.TF,
 				Type: firesea.Type,
@@ -290,8 +308,8 @@ func handleUpgrade(args []interface{}) {
 		log.Debug("升级时获取房间失败")
 		return
 	}
-	for aa, pp := range room.Players {
-		if aa == a {
+	for user, pp := range room.Players {
+		if user == Users[a] {
 			pp.Upgrade(room, m.Id, m.TypeOld, m.TypeNew)
 		}
 	}
@@ -332,7 +350,7 @@ func handleGetRoomList(args []interface{}) {
 	roomList := []*msg.RoomInfo{}
 	pageNum := m.PageNum - 1
 	if len(RoomList) > (pageNum+1)*5 {
-		roomList = RoomList[pageNum*5 : (pageNum+1)*5]
+		roomList = RoomList[pageNum*5: (pageNum+1)*5]
 	} else if len(RoomList) > pageNum*5 {
 		roomList = RoomList[pageNum*5:]
 	}
@@ -368,12 +386,18 @@ func handleEnterRoom(args []interface{}) {
 		return
 	}
 	Agent2Room[a] = roomId
+	userData := gamedata.UsersMap[Users[a]]
 	room.Users[Users[a]] = &msg.User{
-		UserName: Users[a],
+		UserName: userData.Name,
+		Photo:    userData.Photo,
+		Total:    userData.Total,
+		Victory:  userData.Victory,
+		Defeat:   userData.Defeat,
+		Rate:     userData.Defeat,
 		KeyOwner: false,
 	}
 	room.PlayerCount += 1
-	room.Players[a] = nil
+	room.Players[Users[a]] = nil
 	UpdateRoomInfo(room)
 }
 
@@ -396,4 +420,23 @@ func handleStartBattle(args []interface{}) {
 	if room.Users[Users[a]].KeyOwner {
 		StartBattle(room)
 	}
+}
+
+func handleGetUserInfo(args []interface{}) {
+	a := args[1].(gate.Agent)
+	userData := new(gamedata.UserData)
+	has, err := gamedata.Db.Where("name=?", Users[a]).Get(userData)
+	if err != nil || !has {
+		log.Debug("获取角色信息失败")
+		return
+	}
+	a.WriteMsg(&msg.User{
+		UserName: userData.Name,
+		Photo:    userData.Photo,
+		Total:    userData.Total,
+		Victory:  userData.Victory,
+		Defeat:   userData.Defeat,
+		Rate:     userData.Rate,
+		KeyOwner: false,
+	})
 }

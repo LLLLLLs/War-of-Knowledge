@@ -33,8 +33,11 @@ func UpdateRoomInfo(room *Room) {
 			Users:  room.Users,
 		})
 	}
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.RoomInfo{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.RoomInfo{
 			Msg:    "ok",
 			RoomId: room.RoomId,
 			Name:   room.Name,
@@ -58,10 +61,10 @@ func DeleteRoom(roomId int, a gate.Agent) {
 		deleteRoomInfo(roomId)
 	}
 	if room.InBattle == true && room.Closed == true {
-		for aa := range room.Players {
-			delete(Agent2Room, aa)
-			delete(Rooms, roomId)
+		for _, aa := range room.User2Agent {
+			delete(Agent2Room, *aa)
 		}
+		delete(Rooms, roomId)
 		return
 	}
 	delete(Agent2Room, a)

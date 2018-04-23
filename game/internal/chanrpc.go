@@ -1,8 +1,10 @@
 package internal
 
 import (
-	"github.com/name5566/leaf/gate"
 	"server/gamedata"
+	"time"
+	"github.com/name5566/leaf/log"
+	"github.com/name5566/leaf/gate"
 )
 
 var (
@@ -17,20 +19,27 @@ func init() {
 	skeleton.RegisterChanRPC("RecoverBattle", rpcRecoverBattle)
 }
 
-func rpcNewAgent(args []interface{}) {}
+func rpcNewAgent(args []interface{}) {
+	a := args[0].(gate.Agent)
+	log.Debug("%v", a.RemoteAddr())
+}
 
 func rpcCloseAgent(args []interface{}) {
 	a := args[0].(gate.Agent)
 	if _, ok := Users[a]; ok {
-		gamedata.UsersMap[Users[a]].Login = false
+		gamedata.UsersMap[Users[a]].Login = 0
 	}
 	if roomId, ok := Agent2Room[a]; ok {
 		if room, ok := GetRoom(roomId); ok {
 			if room.InBattle == true {
-				//在room里增加 断线计时器 和 重连计时器
-				//TODO
-				EndBattle(roomId, a)
+				room.User2Agent[Users[a]] = nil
 				delete(Users, a)
+				timer := time.NewTimer(time.Second * 30)
+				<-timer.C
+				if gamedata.UsersMap[Users[a]].Login == 1 {
+					return
+				}
+				EndBattle(roomId, a)
 				DeleteRoom(roomId, a)
 				return
 			}
@@ -47,11 +56,14 @@ func rpcLogin(args []interface{}) {
 	a := args[0].(gate.Agent)
 	name := args[1].(string)
 	Users[a] = name
-	gamedata.UsersMap[name].Login = true
 }
 
 func rpcRecoverBattle(args []interface{}) {
-	// TODO
-	//a := args[0].(gate.Agent)
-	//roomId := gamedata.UsersMap[Users[a]].RoomId
+	a := args[0].(gate.Agent)
+	room, ok := GetRoom(gamedata.UsersMap[Users[a]].RoomId)
+	if !ok {
+		log.Debug("重连失败,房间已关闭")
+		return
+	}
+	RecoverBattle(a, room)
 }

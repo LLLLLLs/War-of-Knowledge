@@ -59,15 +59,18 @@ func (s *Skill0000) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	}
 	log.Debug("success")
 	h.MP -= s.Cost
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UseSkillInf{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			0,
 			"0000",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.UpdateHeroState{
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
@@ -130,15 +133,18 @@ func (s *Skill0010) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	}
 	log.Debug("success")
 	h.MP -= s.Cost
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UseSkillInf{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			0,
 			"0010",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.UpdateHeroState{
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
@@ -235,20 +241,23 @@ func (s *Skill0011) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	room.Count += 1
 	room.SetMiddle(iw.ID, iw)
 	go iw.TakeAction(room)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
 		})
-		aa.WriteMsg(&msg.UseSkillInf{
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			iw.ID,
 			"0011",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.CreateMiddle{
+		(*aa).WriteMsg(&msg.CreateMiddle{
 			iw.ID,
 			*iw.TF,
 			iw.Type,
@@ -285,20 +294,23 @@ func (s *Skill0020) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	fb := NewFireBottle(room.Count+1, tf, h)
 	room.Count += 1
 	room.SetMiddle(fb.ID, fb)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
 		})
-		aa.WriteMsg(&msg.UseSkillInf{
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			fb.ID,
 			"0020",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.CreateMiddle{
+		(*aa).WriteMsg(&msg.CreateMiddle{
 			fb.ID,
 			*fb.TF,
 			fb.Type,
@@ -333,20 +345,23 @@ func (s *Skill0100) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	room.Count += 1
 	room.SetMiddle(sb.ID, sb)
 	go sb.TakeAction(room)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
 		})
-		aa.WriteMsg(&msg.UseSkillInf{
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			sb.ID,
 			"0100",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.CreateMiddle{
+		(*aa).WriteMsg(&msg.CreateMiddle{
 			sb.ID,
 			*sb.TF,
 			sb.Type,
@@ -380,13 +395,16 @@ func (s *Skill0110) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	log.Debug("success")
 	h.MP -= s.Cost
 	balls := s.generateElectricBall(room, h, tf, 4)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
 		})
-		aa.WriteMsg(&msg.UseSkillInf{
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			balls[0].ID,
 			"0110",
@@ -394,7 +412,7 @@ func (s *Skill0110) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 			tf,
 		})
 		for _, ball := range balls {
-			aa.WriteMsg(&msg.CreateMiddle{
+			(*aa).WriteMsg(&msg.CreateMiddle{
 				ball.ID,
 				*ball.TF,
 				ball.Type,
@@ -439,15 +457,18 @@ func (s *Skill0111) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	}
 	log.Debug("技能0111释放成功")
 	h.MP -= s.Cost
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UseSkillInf{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			0,
 			"0111",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.UpdateHeroState{
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
@@ -497,20 +518,23 @@ func (s *Skill0200) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	room.Count += 1
 	bt := NewBarrierTree(room.Count, tf)
 	room.SetMiddle(bt.ID, bt)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
 		})
-		aa.WriteMsg(&msg.UseSkillInf{
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			bt.ID,
 			"0200",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.CreateMiddle{
+		(*aa).WriteMsg(&msg.CreateMiddle{
 			bt.ID,
 			*bt.TF,
 			bt.Type,
@@ -547,20 +571,23 @@ func (s *Skill0210) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	room.Count += 1
 	hf := NewFlower(room.Count, tf)
 	room.SetMiddle(hf.ID, hf)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
 		})
-		aa.WriteMsg(&msg.UseSkillInf{
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			hf.ID,
 			"0210",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.CreateMiddle{
+		(*aa).WriteMsg(&msg.CreateMiddle{
 			hf.ID,
 			*hf.TF,
 			hf.Type,
@@ -599,20 +626,23 @@ func (s *Skill0211) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	rt := NewResourceTree(room.Count, tf)
 	go rt.TakeAction(room)
 	room.SetMiddle(rt.ID, rt)
-	for aa := range room.Players {
-		aa.WriteMsg(&msg.UpdateHeroState{
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateHeroState{
 			h.ID,
 			h.HP,
 			h.MP,
 		})
-		aa.WriteMsg(&msg.UseSkillInf{
+		(*aa).WriteMsg(&msg.UseSkillInf{
 			h.ID,
 			rt.ID,
 			"0211",
 			true,
 			tf,
 		})
-		aa.WriteMsg(&msg.CreateMiddle{
+		(*aa).WriteMsg(&msg.CreateMiddle{
 			rt.ID,
 			*rt.TF,
 			rt.Type,

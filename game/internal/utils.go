@@ -22,9 +22,12 @@ func GetDamage(hatk, def float64, satk float64) float64 {
 }
 
 func GetEnemy(a gate.Agent, room Room) *Player {
-	for aa, p := range room.Players {
-		if aa != a {
-			return p
+	for user, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		if (*aa) != a {
+			return room.Players[user]
 		}
 	}
 	return nil
