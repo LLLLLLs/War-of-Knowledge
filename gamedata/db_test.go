@@ -8,10 +8,11 @@ package gamedata
 import (
 	"testing"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDB(t *testing.T) {
-	//ast := assert.New(t)
+	ast := assert.New(t)
 	cipher := MD5("123456789546456413213")
 	fmt.Println(cipher)
 	userData := UserData{
@@ -20,7 +21,7 @@ func TestDB(t *testing.T) {
 		Photo: 5,
 	}
 	Db.Delete(userData)
-	//effect, err := Db.Insert(userData)
-	//ast.Nil(err)
-	//ast.Equal(int64(1), effect)
+	effect, err := Db.Insert(userData)
+	ast.Nil(err)
+	ast.Equal(int64(1), effect)
 }
