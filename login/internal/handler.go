@@ -1,19 +1,19 @@
 package internal
 
 import (
-	"reflect"
-
-	"server/msg"
-	"server/gamedata"
-
-	"github.com/name5566/leaf/gate"
-	"github.com/name5566/leaf/log"
-	"server/game"
 	"unicode"
+	"reflect"
 	"errors"
 	"fmt"
 	"math/rand"
 	"time"
+
+	"server/msg"
+	"server/gamedata"
+	"server/game"
+
+	"github.com/name5566/leaf/gate"
+	"github.com/name5566/leaf/log"
 )
 
 var PlayerId = 1

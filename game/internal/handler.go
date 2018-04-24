@@ -23,6 +23,7 @@ func init() {
 
 	handler(&msg.CreateHero{}, handleCreateHero)
 	handler(&msg.UpdatePosition{}, handleUpdatePosition)
+	handler(&msg.MoveTo{}, handleMoveTo)
 	handler(&msg.UseSkill{}, handleUseSkill)
 	handler(&msg.GetResource{}, handleGetResource)
 	handler(&msg.SkillCrash{}, handleSkillCrash)
@@ -46,6 +47,15 @@ func handleMatch(args []interface{}) {
 		LastRoomId += 1
 		LastMatchId = LastRoomId
 		room = NewRoom(roomId, fmt.Sprintf("房间_%d", roomId), Match, a)
+	} else {
+		userName := Users[a]
+		room.Players[userName] = nil
+		room.User2Agent[userName] = &a
+		room.Users[userName] = &msg.User{
+			UserName: userName,
+			KeyOwner: false,
+		}
+		room.PlayerCount += 1
 	}
 	if room.PlayerCount == 1 {
 		a.WriteMsg(&msg.MatchStat{
@@ -120,14 +130,6 @@ func handleUpdatePosition(args []interface{}) {
 	h, ok := p.GetHeros(m.Id)
 	if ok {
 		h.UpdatePosition(m.TfServer)
-		for _, aa := range room.User2Agent {
-			if aa == nil {
-				continue
-			}
-			if (*aa) != a {
-				(*aa).WriteMsg(m)
-			}
-		}
 	} else {
 		middle, ok := room.GetMiddle(m.Id)
 		if !ok {
@@ -439,4 +441,31 @@ func handleGetUserInfo(args []interface{}) {
 		Rate:     userData.Rate,
 		KeyOwner: false,
 	})
+}
+
+func handleMoveTo(args []interface{}) {
+	m := args[0].(*msg.MoveTo)
+	a := args[1].(gate.Agent)
+	room, ok := GetRoom(Agent2Room[a])
+	if !ok {
+		log.Debug("获取房间信息失败")
+		return
+	}
+	user := Users[a]
+	h, ok := room.Players[user].Heros[m.Id]
+	if !ok {
+		log.Debug("英雄获取失败")
+		return
+	}
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			return
+		} else if (*aa) != a {
+			(*aa).WriteMsg(&msg.MoveTo{
+				Id:       h.ID,
+				TFNow:    *h.Transform,
+				TFTarget: m.TFTarget,
+			})
+		}
+	}
 }

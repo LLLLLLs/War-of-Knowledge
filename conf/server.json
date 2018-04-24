@@ -3,14 +3,5 @@
   "LogPath": "",
   "TCPAddr": "0.0.0.0:9090",
   "MaxConnNum": 20000,
-  "Users": [
-    {
-      "UserName": "admin1",
-      "UserPwd": "123456"
-    },
-    {
-      "UserName": "admin2",
-      "UserPwd": "654321"
-    }
-  ]
+  "ConsolePort": 3333
 }

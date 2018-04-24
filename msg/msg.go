@@ -38,6 +38,8 @@ func init() {
 	Processor.Register(&CreateHero{})
 	Processor.Register(&CreateHeroInf{})
 	Processor.Register(&UpdatePosition{})
+	Processor.Register(&MoveTo{})
+
 	Processor.Register(&UpdateHeroState{})
 	Processor.Register(&DeleteHero{})
 	Processor.Register(&GetResource{})

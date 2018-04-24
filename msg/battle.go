@@ -37,6 +37,12 @@ type UpdatePosition struct {
 	TfServer TFServer `json:"tfServer"`
 }
 
+type MoveTo struct {
+	Id       int      `json:"id"`
+	TFNow    TFServer `json:"tfNow"`
+	TFTarget TFServer `json:"tfServer"`
+}
+
 type UseSkill struct {
 	RoomId   int
 	Id       int
