@@ -12,6 +12,7 @@ func init() {
 	Processor.Register(&RegisterInfo{})
 	Processor.Register(&Login{})
 	Processor.Register(&LoginStat{})
+	Processor.Register(&User{})
 	Processor.Register(&Match{})
 	Processor.Register(&MatchStat{})
 	Processor.Register(&QuitMatch{})

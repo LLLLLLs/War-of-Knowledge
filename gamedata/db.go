@@ -29,7 +29,7 @@ func InitDB(dburi string) {
 		panic(err)
 	}
 	if debug {
-		engine.ShowSQL(false)
+		engine.ShowSQL(debug)
 	}
 	Db = engine
 }

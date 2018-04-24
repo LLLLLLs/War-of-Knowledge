@@ -352,7 +352,7 @@ func handleGetRoomList(args []interface{}) {
 	roomList := []*msg.RoomInfo{}
 	pageNum := m.PageNum - 1
 	if len(RoomList) > (pageNum+1)*5 {
-		roomList = RoomList[pageNum*5: (pageNum+1)*5]
+		roomList = RoomList[pageNum*5 : (pageNum+1)*5]
 	} else if len(RoomList) > pageNum*5 {
 		roomList = RoomList[pageNum*5:]
 	}
@@ -400,6 +400,7 @@ func handleEnterRoom(args []interface{}) {
 	}
 	room.PlayerCount += 1
 	room.Players[Users[a]] = nil
+	room.User2Agent[Users[a]] = &a
 	UpdateRoomInfo(room)
 }
 

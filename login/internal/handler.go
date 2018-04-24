@@ -32,9 +32,6 @@ func handleAuth(args []interface{}) {
 	a := args[1].(gate.Agent)
 	log.Debug("玩家 %s 登录", m.UserName)
 	userData := new(gamedata.UserData)
-	condi := gamedata.UserData{
-		Name: userData.Name,
-	}
 	has, err := gamedata.Db.Where("name=?", m.UserName).Get(userData)
 	if err != nil || !has {
 		log.Debug("账号不存在")
@@ -44,6 +41,9 @@ func handleAuth(args []interface{}) {
 			PlayerId: PlayerId,
 		})
 		return
+	}
+	condi := gamedata.UserData{
+		Name: userData.Name,
 	}
 	cipher := gamedata.MD5(m.UserPwd)
 	if cipher != userData.PwdHash {
@@ -105,7 +105,7 @@ func handleRegister(args []interface{}) {
 		})
 		return
 	}
-	err = validParam(m.Name)
+	err = validParam(m.Name, 6, 10)
 	if err != nil {
 		log.Debug("名称%s", err.Error())
 		a.WriteMsg(&msg.RegisterInfo{
@@ -113,7 +113,7 @@ func handleRegister(args []interface{}) {
 		})
 		return
 	}
-	err = validParam(m.Password)
+	err = validParam(m.Password, 6, 12)
 	if err != nil {
 		log.Debug("密码%s", err.Error())
 		a.WriteMsg(&msg.RegisterInfo{
@@ -142,11 +142,11 @@ func handleRegister(args []interface{}) {
 	})
 }
 
-func validParam(word string) (error) {
+func validParam(word string, min, max int) (error) {
 	if !filter(word) {
 		return errors.New("仅支持字母和数字")
-	} else if !validLen(word, 6, 16) {
-		return errors.New("长度仅限6~16位")
+	} else if !validLen(word, min, max) {
+		return errors.New(fmt.Sprintf("长度仅限%d~%d位", min, max))
 	}
 	return nil
 }

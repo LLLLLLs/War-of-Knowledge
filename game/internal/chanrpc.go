@@ -28,15 +28,21 @@ func rpcCloseAgent(args []interface{}) {
 	a := args[0].(gate.Agent)
 	if _, ok := Users[a]; ok {
 		gamedata.UsersMap[Users[a]].Login = 0
+	} else {
+		log.Debug("%v 断开连接", a.RemoteAddr())
+		return
 	}
+	userData := gamedata.UsersMap[Users[a]]
+	gamedata.Db.Id(userData.Id).Cols("login").Update(gamedata.UsersMap[Users[a]])
 	if roomId, ok := Agent2Room[a]; ok {
 		if room, ok := GetRoom(roomId); ok {
 			if room.InBattle == true {
 				room.User2Agent[Users[a]] = nil
+				userName := Users[a]
 				delete(Users, a)
 				timer := time.NewTimer(time.Second * 30)
 				<-timer.C
-				if gamedata.UsersMap[Users[a]].Login == 1 {
+				if gamedata.UsersMap[userName].Login == 1 {
 					return
 				}
 				EndBattle(roomId, a)
@@ -65,5 +71,6 @@ func rpcRecoverBattle(args []interface{}) {
 		log.Debug("重连失败,房间已关闭")
 		return
 	}
+	Agent2Room[a] = room.RoomId
 	RecoverBattle(a, room)
 }
