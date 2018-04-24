@@ -12,6 +12,7 @@ func init() {
 	msg.Processor.SetRouter(&msg.Match{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.QuitMatch{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.GetUserInfo{}, game.ChanRPC)
+	msg.Processor.SetRouter(&msg.ChangeImage{}, game.ChanRPC)
 
 	msg.Processor.SetRouter(&msg.CreateHero{}, game.ChanRPC)
 	msg.Processor.SetRouter(&msg.UpdatePosition{}, game.ChanRPC)

@@ -22,7 +22,7 @@ func (m *Module) OnInit() {
 }
 
 func (m *Module) OnDestroy() {
-	fmt.Println("111")
+	fmt.Println("数据清除...")
 	db := gamedata.Db
 	users := make([]gamedata.UserData, 0)
 	db.Where("login=? or in_battle=?", 1, 1).Find(&users)
@@ -41,5 +41,5 @@ func (m *Module) OnDestroy() {
 			log.Debug("数据库更新失败")
 		}
 	}
-	fmt.Println("222")
+	fmt.Println("数据清除完成...")
 }

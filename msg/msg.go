@@ -16,6 +16,8 @@ func init() {
 	Processor.Register(&Match{})
 	Processor.Register(&MatchStat{})
 	Processor.Register(&QuitMatch{})
+	Processor.Register(&ChangeImage{})
+	Processor.Register(&ChangeImageInf{})
 
 	Processor.Register(&GetUserInfo{})
 

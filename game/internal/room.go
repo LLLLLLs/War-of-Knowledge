@@ -80,6 +80,10 @@ func StartBattle(room *Room) {
 			RoomId:      room.RoomId,
 			WhichPlayer: which,
 		})
+	}
+	for _, aa := range room.User2Agent {
+		timer := time.NewTimer(time.Second * 3)
+		<-timer.C
 		// 设置玩家信息为战斗中(用于断线重连)
 		gamedata.UsersMap[Users[*aa]].InBattle = 1
 		gamedata.UsersMap[Users[*aa]].RoomId = room.RoomId

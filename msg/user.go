@@ -51,3 +51,12 @@ type User struct {
 	Rate     int    `json:"rate"`
 	KeyOwner bool   `json:"keyOwner"`
 }
+
+type ChangeImage struct {
+	ImageNum int
+}
+
+type ChangeImageInf struct {
+	Msg   string `json:"msg"`
+	Photo int    `json:"photo"`
+}

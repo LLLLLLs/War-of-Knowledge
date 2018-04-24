@@ -14,6 +14,7 @@ func init() {
 	handler(&msg.Match{}, handleMatch)
 	handler(&msg.QuitMatch{}, handleQuitMatch)
 	handler(&msg.GetUserInfo{}, handleGetUserInfo)
+	handler(&msg.ChangeImage{}, handleChangeImage)
 
 	handler(&msg.CreateRoom{}, handleCreateRoom)
 	handler(&msg.GetRoomList{}, handleGetRoomList)
@@ -64,7 +65,7 @@ func handleMatch(args []interface{}) {
 		})
 	} else { // 匹配成功
 		//UpdateRoomInfo(room)
-		StartBattle(room)
+		go StartBattle(room)
 	}
 }
 
@@ -469,4 +470,26 @@ func handleMoveTo(args []interface{}) {
 			})
 		}
 	}
+}
+
+func handleChangeImage(args []interface{}) {
+	m := args[0].(*msg.ChangeImage)
+	a := args[1].(gate.Agent)
+	userData := gamedata.UsersMap[Users[a]]
+	userData.Photo = m.ImageNum
+	condition := gamedata.UserData{
+		Id: userData.Id,
+	}
+	effect, err := gamedata.Db.Update(userData, condition)
+	if err != nil || int(effect) != 1 {
+		log.Debug("更换头像失败")
+		a.WriteMsg(&msg.ChangeImageInf{
+			Msg: "更换头像失败",
+		})
+		return
+	}
+	a.WriteMsg(&msg.ChangeImageInf{
+		Msg:   "ok",
+		Photo: userData.Photo,
+	})
 }
