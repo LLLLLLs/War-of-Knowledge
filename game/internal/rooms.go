@@ -3,6 +3,7 @@ package internal
 import (
 	"server/msg"
 	"github.com/name5566/leaf/gate"
+	"server/gamedata"
 )
 
 var (
@@ -51,17 +52,28 @@ func deleteRoomInfo(roomId int) {
 	}
 }
 
-func DeleteRoom(roomId int, a gate.Agent) {
+func DeleteRoom(roomId int, a gate.Agent, surrender bool) {
 	room := Rooms[roomId]
 	if room.Mode == Spec {
 		deleteRoomInfo(roomId)
 	}
-	if room.InBattle == true && room.Closed == true {
+	// 正常退出 删除双方信息
+	if surrender {
 		for _, aa := range room.User2Agent {
 			delete(Agent2Room, *aa)
 		}
 		delete(Rooms, roomId)
 		return
+	}
+	// 非正常关闭(双方都掉线,只需要处理后掉线的数据)
+	room.Closed = true
+	for user := range room.Users {
+		userData := gamedata.UsersMap[user]
+		cond := gamedata.UserData{
+			Id: userData.Id,
+		}
+		userData.InBattle = 0
+		gamedata.Db.Cols("in_battle").Update(userData, cond)
 	}
 	delete(Agent2Room, a)
 	delete(Rooms, roomId)

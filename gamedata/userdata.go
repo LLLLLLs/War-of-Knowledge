@@ -22,3 +22,7 @@ type UserData struct {
 func (u *UserData) TableName() string {
 	return "user_data"
 }
+
+func (u *UserData) Refresh() {
+	Db.Where("id=?", u.Id).Get(u)
+}
