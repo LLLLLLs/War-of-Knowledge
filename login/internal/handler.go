@@ -42,7 +42,7 @@ func handleAuth(args []interface{}) {
 		})
 		return
 	}
-	condi := gamedata.UserData{
+	cond := gamedata.UserData{
 		Name: userData.Name,
 	}
 	cipher := gamedata.MD5(m.UserPwd)
@@ -79,7 +79,7 @@ func handleAuth(args []interface{}) {
 			Rate:     userData.Rate,
 			KeyOwner: false,
 		})
-		gamedata.Db.Update(userData, condi)
+		gamedata.Db.Update(userData, cond)
 		game.ChanRPC.Go("Login", a, userData.Name)
 		if userData.InBattle == 1 {
 			game.ChanRPC.Go("RecoverBattle", a)
