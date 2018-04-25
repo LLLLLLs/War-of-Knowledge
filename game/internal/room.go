@@ -60,6 +60,7 @@ func (r *Room) StartMapEvent() {
 }
 
 func StartBattle(room *Room) {
+	deleteRoomInfo(room.RoomId) // 开始战斗后从房间列表中删除该房间
 	rand.Seed(time.Now().Unix())
 	r := rand.Intn(100)
 	flag := 0
@@ -72,6 +73,7 @@ func StartBattle(room *Room) {
 		if flag == i {
 			which = 1
 		}
+		i += 1
 		player := NewPlayer(which)
 		room.Players[user] = player
 		(*aa).WriteMsg(&msg.MatchStat{
@@ -87,7 +89,6 @@ func StartBattle(room *Room) {
 		// 设置玩家信息为战斗中(用于断线重连)
 		gamedata.UsersMap[Users[*aa]].InBattle = 1
 		gamedata.UsersMap[Users[*aa]].RoomId = room.RoomId
-		i += 1
 		cond := gamedata.UserData{
 			Id: gamedata.UsersMap[Users[*aa]].Id,
 		}
@@ -104,12 +105,7 @@ func EndBattle(roomId int, lose gate.Agent) {
 	}
 	room.Closed = true
 	for user, aa := range room.User2Agent {
-		userData := new(gamedata.UserData)
-		has, err := gamedata.Db.Where("name=?", user).Get(userData)
-		if err != nil || !has {
-			log.Debug("获取角色数据失败")
-			return
-		}
+		userData := gamedata.UsersMap[user]
 		condi := gamedata.UserData{
 			Id: userData.Id,
 		}
@@ -125,7 +121,7 @@ func EndBattle(roomId int, lose gate.Agent) {
 			userData.Total += 1
 			userData.Victory += 1
 		}
-		userData.Rate = int(userData.Victory / userData.Total)
+		userData.Rate = int(userData.Victory * 100 / userData.Total)
 		userData.InBattle = 0
 
 		effect, err := gamedata.Db.Update(userData, condi)
@@ -136,7 +132,6 @@ func EndBattle(roomId int, lose gate.Agent) {
 		(*aa).WriteMsg(&msg.EndBattle{
 			IsWin: isWin,
 		})
-		gamedata.UsersMap[Users[*aa]] = userData
 	}
 }
 
@@ -149,6 +144,8 @@ func RecoverBattle(a gate.Agent, room *Room) {
 		RoomId:      room.RoomId,
 		WhichPlayer: room.Players[userName].Which,
 	})
+	timer := time.NewTimer(time.Second * 3)
+	<-timer.C
 	for _, pp := range room.Players {
 		for _, hero := range pp.Heros {
 			a.WriteMsg(&msg.CreateHeroInf{
@@ -233,7 +230,7 @@ func NewRoom(roomId int, name string, mode string, a gate.Agent) *Room {
 		InBattle:    false,
 		Mode:        mode,
 	}
-	AddRoom(&room)
+	Rooms[room.RoomId] = &room
 	userName := Users[a]
 	room.Players[userName] = nil
 	Agent2Room[a] = room.RoomId

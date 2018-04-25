@@ -225,7 +225,7 @@ type Resource struct {
 
 func (r *Resource) TakeAction(room *Room) {
 	ticker := time.NewTicker(r.Duration)
-	ticker2 := time.NewTicker(time.Second * 5)
+	ticker2 := time.NewTicker(time.Second * 3)
 
 	for {
 		select {

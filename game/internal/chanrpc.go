@@ -21,22 +21,28 @@ func init() {
 
 func rpcNewAgent(args []interface{}) {
 	a := args[0].(gate.Agent)
-	log.Debug("%v", a.RemoteAddr())
+	log.Debug("%v 连接", a.RemoteAddr())
 }
 
 func rpcCloseAgent(args []interface{}) {
 	a := args[0].(gate.Agent)
-	if _, ok := Users[a]; ok {
-		gamedata.UsersMap[Users[a]].Login = 0
-	} else {
-		log.Debug("%v 断开连接", a.RemoteAddr())
-		return
-	}
+	delete(Agent2Room, a)
 	userData := gamedata.UsersMap[Users[a]]
-	gamedata.Db.Id(userData.Id).Cols("login").Update(gamedata.UsersMap[Users[a]])
-	if roomId, ok := Agent2Room[a]; ok {
-		if room, ok := GetRoom(roomId); ok {
+	userData.Login = 0
+	cond := gamedata.UserData{
+		Id: userData.Id,
+	}
+	gamedata.Db.Id(userData.Id).Cols("login").Update(userData, cond)
+	roomId := userData.RoomId
+	if room, ok := GetRoom(roomId); ok {
+		go func() {
+			room.PlayerCount -= 1
 			if room.InBattle == true {
+				if room.PlayerCount == 0 {
+					log.Debug("双方退出,游戏结束")
+					DeleteRoom(roomId, a)
+					return
+				}
 				room.User2Agent[Users[a]] = nil
 				userName := Users[a]
 				delete(Users, a)
@@ -45,8 +51,10 @@ func rpcCloseAgent(args []interface{}) {
 				if gamedata.UsersMap[userName].Login == 1 {
 					return
 				}
-				EndBattle(roomId, a)
-				DeleteRoom(roomId, a)
+				if _, ok := GetRoom(roomId); ok {
+					EndBattle(roomId, a)
+					DeleteRoom(roomId, a)
+				}
 				return
 			}
 			if room.Mode == Match {
@@ -54,7 +62,7 @@ func rpcCloseAgent(args []interface{}) {
 			} else {
 				ExitRoom(a, room)
 			}
-		}
+		}()
 	}
 }
 

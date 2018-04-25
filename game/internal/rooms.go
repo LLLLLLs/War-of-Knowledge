@@ -12,10 +12,6 @@ var (
 	RoomList    = []*msg.RoomInfo{}
 )
 
-func AddRoom(room *Room) {
-	Rooms[room.RoomId] = room
-}
-
 func UpdateRoomInfo(room *Room) {
 	flag := 0
 	for _, roomInfo := range RoomList {
