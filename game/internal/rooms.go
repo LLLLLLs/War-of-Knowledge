@@ -4,6 +4,7 @@ import (
 	"server/msg"
 	"github.com/name5566/leaf/gate"
 	"server/gamedata"
+	"time"
 )
 
 var (
@@ -65,9 +66,10 @@ func DeleteRoom(roomId int, a gate.Agent, surrender bool) {
 		delete(Rooms, roomId)
 		return
 	}
-	// 非正常关闭(双方都掉线,只需要处理后掉线的数据)
+	// 非正常关闭(双方都掉线)
 	room.Closed = true
 	for user := range room.Users {
+		room.Players[user].Base.Timer.Reset(time.Millisecond)
 		userData := gamedata.UsersMap[user]
 		cond := gamedata.UserData{
 			Id: userData.Id,
