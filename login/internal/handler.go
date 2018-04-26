@@ -152,7 +152,7 @@ func validParam(word string, min, max int) (error) {
 }
 
 func validLen(word string, min, max int) bool {
-	return len(word) > min && len(word) < max
+	return len(word) >= min && len(word) <= max
 }
 
 func filter(word string) bool {
