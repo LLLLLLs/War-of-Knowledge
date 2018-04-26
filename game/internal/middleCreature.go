@@ -73,9 +73,9 @@ func NewFlower(id int, tf msg.TFServer) *HealFlower {
 			false,
 		},
 		2.0,
-		8.0,
-		time.Second * 30,
-		30.0,
+		7.0,
+		time.Second * 15,
+		20.0,
 		100,
 	}
 }
@@ -169,8 +169,8 @@ func NewBarrierTree(id int, tf msg.TFServer) *BarrierTree {
 			false,
 		},
 		2.0,
-		time.Second * 60,
-		100,
+		time.Second * 30,
+		200,
 	}
 }
 
@@ -201,21 +201,30 @@ func (bt *BarrierTree) TakeAction(room *Room) {
 	timer := time.NewTimer(time.Second)
 	<-timer.C
 	bt.Invincible = false
-	ticker := time.NewTicker(bt.Duration)
-
-	select {
-	case <-ticker.C:
-		if !room.Closed || HasMiddle(bt.ID, room) {
-			room.DeleteMiddle(bt.ID)
-			for _, aa := range room.User2Agent {
-				if aa == nil {
-					continue
+	timer1 := time.NewTimer(bt.Duration)
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if room.Closed {
+					return
 				}
-				(*aa).WriteMsg(&msg.DeleteMiddle{bt.ID})
+			case <-timer1.C:
+				if !room.Closed || HasMiddle(bt.ID, room) {
+					room.DeleteMiddle(bt.ID)
+					for _, aa := range room.User2Agent {
+						if aa == nil {
+							continue
+						}
+						(*aa).WriteMsg(&msg.DeleteMiddle{bt.ID})
+					}
+				}
+				return
 			}
 		}
-		return
-	}
+	}()
+
 }
 
 type Resource struct {
@@ -257,7 +266,7 @@ type Gold struct {
 
 func NewGold(id int, tf msg.TFServer) *Gold {
 	rand.Seed(time.Now().Unix())
-	value := rand.Intn(4) + 3
+	value := rand.Intn(20) + 30
 	return &Gold{
 		Resource{
 			MiddleCreature{
@@ -288,7 +297,7 @@ func NewBlood(id int, tf msg.TFServer) *Blood {
 			},
 			time.Second * 30,
 		},
-		15,
+		50,
 	}
 }
 
@@ -308,7 +317,7 @@ func NewMana(id int, tf msg.TFServer) *Mana {
 			},
 			time.Second * 30,
 		},
-		5,
+		20,
 	}
 }
 
@@ -330,10 +339,10 @@ func NewResourceTree(id int, tf msg.TFServer) *ResourceTree {
 			false,
 		},
 		10.0,
-		2.5,
-		time.Second * 20,
-		time.Second * 2,
-		200.0,
+		3,
+		time.Second * 30,
+		time.Second * 3,
+		100.0,
 	}
 }
 
@@ -480,8 +489,8 @@ func NewElectricBall(id int, tf msg.TFServer) *ElectricBall {
 			&tf,
 			true,
 		},
-		time.Second * 60,
-		10.0,
+		time.Second * 10,
+		-10.0,
 	}
 }
 
@@ -523,8 +532,8 @@ func NewStraightBall(id int, tf msg.TFServer) *StraightBall {
 			&tf,
 			true,
 		},
-		20.0,
-		time.Second * 2,
+		60.0,
+		time.Second * 3,
 	}
 }
 
@@ -668,11 +677,11 @@ func NewFireSea(id int, tf msg.TFServer) *FireSea {
 			&tf,
 			true,
 		},
-		time.Second * 8,
+		time.Second * 10,
 		time.Second * 5,
-		3,
+		5,
 		time.Millisecond * 300,
-		50,
+		60,
 	}
 }
 

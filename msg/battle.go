@@ -163,3 +163,7 @@ type Test struct {
 
 type StartBattle struct {
 }
+
+type SyncItems struct {
+	ItemList []int `json:"itemList"`
+}

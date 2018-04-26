@@ -36,7 +36,7 @@ func rpcCloseAgent(args []interface{}) {
 	cond := gamedata.UserData{
 		Id: userData.Id,
 	}
-	gamedata.Db.Id(userData.Id).Cols("login").Update(userData, cond)
+	gamedata.Db.Cols("login").Update(userData, cond)
 	roomId := userData.RoomId
 	if room, ok := GetRoom(roomId); ok {
 		go func() {

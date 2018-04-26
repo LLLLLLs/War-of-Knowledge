@@ -48,7 +48,7 @@ func commandClose(args []interface{}) interface{} {
 					(*aa).Close()
 				}
 			}
-			DeleteRoom(roomId, nil)
+			DeleteRoom(roomId, nil, false)
 		}
 	}
 	return nil

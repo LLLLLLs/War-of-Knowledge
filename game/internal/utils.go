@@ -18,7 +18,7 @@ func GetDistance(tf1, tf2 *msg.TFServer) float64 {
 }
 
 func GetDamage(hatk, def float64, satk float64) float64 {
-	return hatk + satk - def
+	return (hatk + satk) * (1 / (1 + def*0.05))
 }
 
 func GetEnemy(a gate.Agent, room Room) *Player {

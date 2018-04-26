@@ -39,9 +39,9 @@ type Skill0000 struct {
 }
 
 func (s *Skill0000) InitSkill() {
-	s.Attack = 30.0
-	s.Cost = 30.0
-	s.Radius = 8.0
+	s.Attack = 40.0
+	s.Cost = 40.0
+	s.Radius = 10.0
 }
 
 // 圆形AOE
@@ -113,9 +113,9 @@ type Skill0010 struct {
 }
 
 func (s *Skill0010) InitSkill() {
-	s.Cost = 30
-	s.Radius = 20
-	s.Attack = 30
+	s.Cost = 50
+	s.Radius = 15
+	s.Attack = 80
 }
 
 // 扇形冰
@@ -217,7 +217,7 @@ type Skill0011 struct {
 }
 
 func (s *Skill0011) InitSkill() {
-	s.Cost = 30.0
+	s.Cost = 60.0
 	s.CastDistance = 15.0
 }
 
@@ -271,7 +271,7 @@ type Skill0020 struct {
 }
 
 func (s *Skill0020) InitSkill() {
-	s.Cost = 20
+	s.Cost = 40
 	s.CastDistance = 15
 }
 
@@ -370,13 +370,11 @@ func (s *Skill0100) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 }
 
 type Skill0110 struct {
-	Cost   float64
-	Radius float64
+	Cost float64
 }
 
 func (s *Skill0110) InitSkill() {
-	s.Cost = 30.0
-	s.Radius = 15.0
+	s.Cost = 60.0
 }
 
 // 周身4电球
@@ -438,8 +436,8 @@ type Skill0111 struct {
 }
 
 func (s *Skill0111) InitSkill() {
-	s.Cost = 50.0
-	s.Attack = 50.0
+	s.Cost = 120.0
+	s.Attack = 100.0
 }
 
 // 对敌方所有物体造成伤害
@@ -495,8 +493,8 @@ type Skill0200 struct {
 }
 
 func (s *Skill0200) InitSkill() {
-	s.Cost = 30.0
-	s.CastDistance = 15.0
+	s.Cost = 40.0
+	s.CastDistance = 10.0
 }
 
 // 种障碍树
@@ -548,8 +546,8 @@ type Skill0210 struct {
 }
 
 func (s *Skill0210) InitSkill() {
-	s.Cost = 30.0
-	s.CastDistance = 20.0
+	s.Cost = 60.0
+	s.CastDistance = 10.0
 }
 
 // 种子周围回血
@@ -602,8 +600,8 @@ type Skill0211 struct {
 }
 
 func (s *Skill0211) InitSkill() {
-	s.Cost = 30.0
-	s.CastDistance = 20.0
+	s.Cost = 80.0
+	s.CastDistance = 10.0
 }
 
 // 资源树

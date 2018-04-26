@@ -57,4 +57,6 @@ func init() {
 
 	Processor.Register(&HeartBeat{})
 	Processor.Register(&Test{})
+
+	Processor.Register(&SyncItems{})
 }

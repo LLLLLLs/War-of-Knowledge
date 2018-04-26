@@ -225,23 +225,25 @@ func handleSkillCrash(args []interface{}) {
 		return
 	}
 	var damage float64
-	if att, ok := fromItem.GetAttack(); !ok {
+	att, ok := fromItem.GetAttack()
+	if !ok {
 		log.Debug("middle %d has no attack", m.FromItemId)
 		return
-	} else {
-		damage = fromHero.Attack + att
 	}
 	if m.ToId == 0 || m.ToId == 1 {
 		if m.ToId != enemy.Which {
 			return
 		}
+		damage = GetDamage(fromHero.Attack, 0, att)
 		toBase := enemy.Base
 		toBase.SubHP(damage, enemy.Which, *room)
 	} else {
 		toHero, ok := enemy.GetHeros(m.ToId)
 		if ok {
+			damage = GetDamage(fromHero.Attack, toHero.Def, att)
 			toHero.SubHP(damage, *room)
 		} else {
+			damage = GetDamage(fromHero.Attack, 0, att)
 			toMiddle, ok := room.GetMiddle(m.ToId)
 			if !ok {
 				log.Debug("no object %d", m.ToId)
@@ -429,8 +431,10 @@ func handleStartBattle(args []interface{}) {
 
 func handleGetUserInfo(args []interface{}) {
 	a := args[1].(gate.Agent)
-	userData := new(gamedata.UserData)
-	has, err := gamedata.Db.Where("name=?", Users[a]).Get(userData)
+	userData := &gamedata.UserData{
+		Name: Users[a],
+	}
+	has, err := gamedata.Db.Get(userData)
 	if err != nil || !has {
 		log.Debug("获取角色信息失败")
 		return

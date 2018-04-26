@@ -31,8 +31,10 @@ func handleAuth(args []interface{}) {
 	m := args[0].(*msg.Login)
 	a := args[1].(gate.Agent)
 	log.Debug("玩家 %s 登录", m.UserName)
-	userData := new(gamedata.UserData)
-	has, err := gamedata.Db.Where("name=?", m.UserName).Get(userData)
+	userData := &gamedata.UserData{
+		Name: m.UserName,
+	}
+	has, err := gamedata.Db.Get(userData)
 	if err != nil || !has {
 		log.Debug("账号不存在")
 		a.WriteMsg(&msg.LoginStat{
@@ -41,9 +43,6 @@ func handleAuth(args []interface{}) {
 			PlayerId: PlayerId,
 		})
 		return
-	}
-	cond := gamedata.UserData{
-		Id: userData.Id,
 	}
 	cipher := gamedata.MD5(m.UserPwd)
 	if cipher != userData.PwdHash {
@@ -79,6 +78,9 @@ func handleAuth(args []interface{}) {
 			Rate:     userData.Rate,
 			KeyOwner: false,
 		})
+		cond := gamedata.UserData{
+			Id: userData.Id,
+		}
 		gamedata.Db.Update(userData, cond)
 		game.ChanRPC.Go("Login", a, userData.Name)
 		if userData.InBattle == 1 {
@@ -91,8 +93,10 @@ func handleAuth(args []interface{}) {
 func handleRegister(args []interface{}) {
 	m := args[0].(*msg.Register)
 	a := args[1].(gate.Agent)
-	userData := new(gamedata.UserData)
-	has, err := gamedata.Db.Where("name=?", m.Name).Get(userData)
+	userData := &gamedata.UserData{
+		Name: m.Name,
+	}
+	has, err := gamedata.Db.Get(userData)
 	if err != nil {
 		log.Debug("数据库错误")
 		a.WriteMsg(&msg.RegisterInfo{

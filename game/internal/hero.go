@@ -75,20 +75,68 @@ func (p *Player) CreateHero(heroType string, id, which int, tf *msg.TFServer) (*
 			Type:      heroType,
 			Transform: &born,
 			// Skills
-			HPMax:  400.0,
-			HP:     400.0,
-			HPHot:  10.0,
-			MPMax:  100.0,
-			MP:     100.0,
-			MPHot:  15.0,
+			HPMax:  300.0,
+			HP:     300.0,
+			HPHot:  2.0,
+			MPMax:  150.0,
+			MP:     150.0,
+			MPHot:  4.0,
 			Speed:  10.0,
 			Attack: 10.0,
-			Def:    10.0,
+			Def:    5.0,
 
 			Debuff: nil,
 		}
 		return hero, nil
+
 	case "001", "101":
+		if p.Base.Money < 700 {
+			return nil, errors.New("金钱不足")
+		}
+		p.Base.Money -= 700
+		hero := &Hero{
+			ID:        id,
+			Type:      heroType,
+			Transform: &born,
+			// Skills
+			HPMax:  300.0,
+			HP:     300.0,
+			HPHot:  2.0,
+			MPMax:  200.0,
+			MP:     200.0,
+			MPHot:  5.0,
+			Speed:  10.0,
+			Attack: 20.0,
+			Def:    20.0,
+
+			Debuff: nil,
+		}
+		return hero, nil
+	case "002", "102":
+		if p.Base.Money < 700 {
+			return nil, errors.New("金钱不足")
+		}
+		p.Base.Money -= 700
+		hero := &Hero{
+			ID:        id,
+			Type:      heroType,
+			Transform: &born,
+			// Skills
+			HPMax:  600.0,
+			HP:     600.0,
+			HPHot:  5.0,
+			MPMax:  200.0,
+			MP:     200.0,
+			MPHot:  5.0,
+			Speed:  12.0,
+			Attack: 40.0,
+			Def:    8.0,
+
+			Debuff: nil,
+		}
+		return hero, nil
+
+	case "010", "110":
 		if p.Base.Money < 400 {
 			return nil, errors.New("金钱不足")
 		}
@@ -96,21 +144,94 @@ func (p *Player) CreateHero(heroType string, id, which int, tf *msg.TFServer) (*
 		hero := &Hero{
 			ID:        id,
 			Type:      heroType,
-			Transform: tf,
+			Transform: &born,
 			// Skills
-			HPMax:  600.0,
-			HP:     600.0,
-			HPHot:  15.0,
-			MPMax:  120.0,
-			MP:     120.0,
-			MPHot:  20.0,
-			Speed:  10.0,
+			HPMax:  200.0,
+			HP:     200.0,
+			HPHot:  2.0,
+			MPMax:  100.0,
+			MP:     100.0,
+			MPHot:  4.0,
+			Speed:  8.0,
 			Attack: 20.0,
-			Def:    15.0,
+			Def:    2.0,
 
 			Debuff: nil,
 		}
 		return hero, nil
+
+	case "011", "111":
+		if p.Base.Money < 900 {
+			return nil, errors.New("金钱不足")
+		}
+		p.Base.Money -= 900
+		hero := &Hero{
+			ID:        id,
+			Type:      heroType,
+			Transform: &born,
+			// Skills
+			HPMax:  400.0,
+			HP:     400.0,
+			HPHot:  5.0,
+			MPMax:  150.0,
+			MP:     150.0,
+			MPHot:  5.0,
+			Speed:  12.0,
+			Attack: 40.0,
+			Def:    10.0,
+
+			Debuff: nil,
+		}
+		return hero, nil
+
+	case "020", "120":
+		if p.Base.Money < 300 {
+			return nil, errors.New("金钱不足")
+		}
+		p.Base.Money -= 300
+		hero := &Hero{
+			ID:        id,
+			Type:      heroType,
+			Transform: &born,
+			// Skills
+			HPMax:  200.0,
+			HP:     200.0,
+			HPHot:  2.0,
+			MPMax:  100.0,
+			MP:     100.0,
+			MPHot:  2.0,
+			Speed:  8.0,
+			Attack: 10.0,
+			Def:    2.0,
+
+			Debuff: nil,
+		}
+		return hero, nil
+
+	case "021", "121":
+		if p.Base.Money < 600 {
+			return nil, errors.New("金钱不足")
+		}
+		p.Base.Money -= 600
+		hero := &Hero{
+			ID:        id,
+			Type:      heroType,
+			Transform: &born,
+			// Skills
+			HPMax:  400.0,
+			HP:     400.0,
+			HPHot:  2.0,
+			MPMax:  150.0,
+			MP:     150.0,
+			MPHot:  3.0,
+			Speed:  8.0,
+			Attack: 10.0,
+			Def:    4.0,
+
+			Debuff: nil,
+		}
+		return hero, nil
+
 	default:
 		return nil, errors.New("类型错误")
 	}

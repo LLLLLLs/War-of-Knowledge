@@ -59,6 +59,34 @@ func (r *Room) StartMapEvent() {
 	r.RandomResource(time.Second*10, time.Second*5)
 }
 
+func (r *Room) SyncItems() {
+	itemList := []int{0, 1}
+	ticker := time.NewTicker(time.Second * 5)
+	for {
+		select {
+		case <-ticker.C:
+			if r.Closed {
+				return
+			}
+			for _, pp := range r.Players {
+				for _, h := range pp.Heros {
+					itemList = append(itemList, h.ID)
+				}
+			}
+			for _, m := range r.Middle {
+				itemList = append(itemList, m.GetId())
+			}
+			for _, aa := range r.User2Agent {
+				if aa != nil {
+					(*aa).WriteMsg(&msg.SyncItems{
+						ItemList: itemList,
+					})
+				}
+			}
+		}
+	}
+}
+
 func StartBattle(room *Room) {
 	deleteRoomInfo(room.RoomId) // 开始战斗后从房间列表中删除该房间
 	rand.Seed(time.Now().Unix())
@@ -87,14 +115,16 @@ func StartBattle(room *Room) {
 	<-timer.C
 	for _, aa := range room.User2Agent {
 		// 设置玩家信息为战斗中(用于断线重连)
-		gamedata.UsersMap[Users[*aa]].InBattle = 1
-		gamedata.UsersMap[Users[*aa]].RoomId = room.RoomId
+		userData := gamedata.UsersMap[Users[*aa]]
+		userData.InBattle = 1
+		userData.RoomId = room.RoomId
 		cond := gamedata.UserData{
-			Id: gamedata.UsersMap[Users[*aa]].Id,
+			Id: userData.Id,
 		}
-		gamedata.Db.Update(gamedata.UsersMap[Users[*aa]], cond)
+		gamedata.Db.Update(userData, cond)
 	}
 	go room.StartMapEvent()
+	go room.SyncItems()
 }
 
 func EndBattle(roomId int, lose gate.Agent) {
@@ -129,7 +159,10 @@ func EndBattle(roomId int, lose gate.Agent) {
 		if err != nil || int(effect) != 1 {
 			log.Debug("更新数据失败")
 		}
-		gamedata.Db.Id(userData.Id).Cols("in_battle").Update(userData)
+		cond := gamedata.UserData{
+			Id: userData.Id,
+		}
+		gamedata.Db.Cols("in_battle").Update(userData, cond)
 		if aa != nil {
 			(*aa).WriteMsg(&msg.EndBattle{
 				IsWin: isWin,
