@@ -51,9 +51,9 @@ func (r *Room) DeleteMiddle(k int) {
 
 func (r *Room) StartMapEvent() {
 	r.InBattle = true
-	for user, aa := range r.User2Agent {
+	for user := range r.User2Agent {
 		pp := r.Players[user]
-		go pp.Base.GetMoneyByTime(*aa)
+		go pp.Base.GetMoneyByTime(user)
 	}
 	go HealByHot(r)
 	r.RandomResource(time.Second*10, time.Second*5)
@@ -83,9 +83,9 @@ func StartBattle(room *Room) {
 			WhichPlayer: which,
 		})
 	}
+	timer := time.NewTimer(time.Second * 3)
+	<-timer.C
 	for _, aa := range room.User2Agent {
-		timer := time.NewTimer(time.Second * 3)
-		<-timer.C
 		// 设置玩家信息为战斗中(用于断线重连)
 		gamedata.UsersMap[Users[*aa]].InBattle = 1
 		gamedata.UsersMap[Users[*aa]].RoomId = room.RoomId
@@ -98,6 +98,7 @@ func StartBattle(room *Room) {
 }
 
 func EndBattle(roomId int, lose gate.Agent) {
+	log.Debug("战斗结束-正常")
 	room, ok := GetRoom(roomId)
 	if !ok {
 		log.Debug("结束战斗时获取房间失败", lose.RemoteAddr())
@@ -129,9 +130,11 @@ func EndBattle(roomId int, lose gate.Agent) {
 			log.Debug("更新数据失败")
 		}
 		gamedata.Db.Id(userData.Id).Cols("in_battle").Update(userData)
-		(*aa).WriteMsg(&msg.EndBattle{
-			IsWin: isWin,
-		})
+		if aa != nil {
+			(*aa).WriteMsg(&msg.EndBattle{
+				IsWin: isWin,
+			})
+		}
 	}
 }
 
@@ -144,9 +147,16 @@ func RecoverBattle(a gate.Agent, room *Room) {
 		RoomId:      room.RoomId,
 		WhichPlayer: room.Players[userName].Which,
 	})
+	log.Debug("%s 同步数据", userName)
+	room.Count += 1
 	timer := time.NewTimer(time.Second * 3)
 	<-timer.C
-	for _, pp := range room.Players {
+	for user, pp := range room.Players {
+		if user == userName {
+			a.WriteMsg(&msg.MoneyLeft{
+				MoneyLeft: pp.Base.Money,
+			})
+		}
 		for _, hero := range pp.Heros {
 			a.WriteMsg(&msg.CreateHeroInf{
 				Msg:         "ok",
@@ -248,7 +258,7 @@ func QuitMatch(a gate.Agent) {
 	if roomId, ok := Agent2Room[a]; ok {
 		if room, ok := GetRoom(roomId); ok {
 			if room.PlayerCount == 1 {
-				DeleteRoom(roomId, a)
+				DeleteRoom(roomId, a, false)
 				log.Debug("退出成功,房间%d删除", roomId)
 				return
 			}
@@ -259,7 +269,7 @@ func QuitMatch(a gate.Agent) {
 
 func ExitRoom(a gate.Agent, room *Room) {
 	if room.PlayerCount == 1 {
-		DeleteRoom(room.RoomId, a)
+		DeleteRoom(room.RoomId, a, false)
 	} else {
 		room.PlayerCount -= 1
 		delete(Agent2Room, a)

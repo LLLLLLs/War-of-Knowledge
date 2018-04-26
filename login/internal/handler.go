@@ -43,7 +43,7 @@ func handleAuth(args []interface{}) {
 		return
 	}
 	cond := gamedata.UserData{
-		Name: userData.Name,
+		Id: userData.Id,
 	}
 	cipher := gamedata.MD5(m.UserPwd)
 	if cipher != userData.PwdHash {
@@ -82,6 +82,7 @@ func handleAuth(args []interface{}) {
 		gamedata.Db.Update(userData, cond)
 		game.ChanRPC.Go("Login", a, userData.Name)
 		if userData.InBattle == 1 {
+			log.Debug("%s 重连中...", userData.Name)
 			game.ChanRPC.Go("RecoverBattle", a)
 		}
 	}

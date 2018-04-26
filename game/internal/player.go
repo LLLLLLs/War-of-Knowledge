@@ -5,7 +5,6 @@ import (
 
 	"server/msg"
 
-	"github.com/name5566/leaf/gate"
 	"sync"
 	"github.com/name5566/leaf/log"
 )
@@ -56,7 +55,7 @@ type Base struct {
 	Timer  *time.Timer
 }
 
-func (b *Base) GetMoneyByTime(a gate.Agent) {
+func (b *Base) GetMoneyByTime(user string) {
 	ticker := time.NewTicker(time.Second * 5)
 
 	for {
@@ -66,9 +65,13 @@ func (b *Base) GetMoneyByTime(a gate.Agent) {
 			return
 		case <-ticker.C:
 			b.Money += 10
-			a.WriteMsg(&msg.MoneyLeft{
-				MoneyLeft: b.Money,
-			})
+			for a, u := range Users {
+				if u == user {
+					a.WriteMsg(&msg.MoneyLeft{
+						MoneyLeft: b.Money,
+					})
+				}
+			}
 		}
 	}
 }

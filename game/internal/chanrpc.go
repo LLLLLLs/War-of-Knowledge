@@ -27,6 +27,10 @@ func rpcNewAgent(args []interface{}) {
 func rpcCloseAgent(args []interface{}) {
 	a := args[0].(gate.Agent)
 	delete(Agent2Room, a)
+	if _, ok := Users[a]; !ok {
+		log.Debug("未登录...连接断开")
+		return
+	}
 	userData := gamedata.UsersMap[Users[a]]
 	userData.Login = 0
 	cond := gamedata.UserData{
@@ -40,20 +44,21 @@ func rpcCloseAgent(args []interface{}) {
 			if room.InBattle == true {
 				if room.PlayerCount == 0 {
 					log.Debug("双方退出,游戏结束")
-					DeleteRoom(roomId, a)
+					DeleteRoom(roomId, a, false)
 					return
 				}
 				room.User2Agent[Users[a]] = nil
-				userName := Users[a]
 				delete(Users, a)
 				timer := time.NewTimer(time.Second * 30)
 				<-timer.C
-				if gamedata.UsersMap[userName].Login == 1 {
+				userData.Refresh()
+				if userData.Login == 1 {
+					log.Debug("%s 重连成功...", userData.Name)
 					return
 				}
 				if _, ok := GetRoom(roomId); ok {
 					EndBattle(roomId, a)
-					DeleteRoom(roomId, a)
+					DeleteRoom(roomId, a, false)
 				}
 				return
 			}

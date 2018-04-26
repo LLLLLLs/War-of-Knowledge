@@ -58,6 +58,7 @@ func handleMatch(args []interface{}) {
 		}
 		room.PlayerCount += 1
 	}
+	Agent2Room[a] = room.RoomId
 	if room.PlayerCount == 1 {
 		a.WriteMsg(&msg.MatchStat{
 			Status: 1,
@@ -134,7 +135,7 @@ func handleUpdatePosition(args []interface{}) {
 	} else {
 		middle, ok := room.GetMiddle(m.Id)
 		if !ok {
-			log.Debug("UpdatePosition:获取中立生物失败")
+			//log.Debug("UpdatePosition:获取中立生物失败")
 			return
 		}
 		switch v := middle.(type) {
@@ -299,7 +300,7 @@ func handleSurrender(args []interface{}) {
 	a := args[1].(gate.Agent)
 	log.Debug("玩家 %s 投降", Users[a])
 	EndBattle(m.RoomId, a)
-	DeleteRoom(m.RoomId, a)
+	DeleteRoom(m.RoomId, a, true)
 }
 
 func handleUpgrade(args []interface{}) {
