@@ -97,7 +97,7 @@ func (p *Player) CreateHero(heroType string, id, which int, tf *msg.TFServer) (*
 		hero := &Hero{
 			ID:        id,
 			Type:      heroType,
-			Transform: &born,
+			Transform: tf,
 			// Skills
 			HPMax:  300.0,
 			HP:     300.0,
@@ -120,7 +120,7 @@ func (p *Player) CreateHero(heroType string, id, which int, tf *msg.TFServer) (*
 		hero := &Hero{
 			ID:        id,
 			Type:      heroType,
-			Transform: &born,
+			Transform: tf,
 			// Skills
 			HPMax:  600.0,
 			HP:     600.0,
@@ -168,7 +168,7 @@ func (p *Player) CreateHero(heroType string, id, which int, tf *msg.TFServer) (*
 		hero := &Hero{
 			ID:        id,
 			Type:      heroType,
-			Transform: &born,
+			Transform: tf,
 			// Skills
 			HPMax:  400.0,
 			HP:     400.0,
@@ -237,13 +237,7 @@ func (p *Player) CreateHero(heroType string, id, which int, tf *msg.TFServer) (*
 	}
 }
 
-func (p *Player) Upgrade(room *Room, id int, old, new string) {
-	var a gate.Agent
-	for user, pp := range room.Players {
-		if pp == p {
-			a = (*room.User2Agent[user])
-		}
-	}
+func (p *Player) Upgrade(a gate.Agent, room *Room, id int, old, new string) {
 	if len(old) != 3 || len(new) != 3 || (old[0:2] != new[0:2]) || (new[2] <= old[2]) {
 		log.Debug("类型错误,进阶失败,%s->%s", old, new)
 		a.WriteMsg(&msg.CreateHeroInf{Msg: "类型错误,进阶失败"})

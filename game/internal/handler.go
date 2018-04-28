@@ -316,7 +316,7 @@ func handleUpgrade(args []interface{}) {
 	}
 	for user, pp := range room.Players {
 		if user == Users[a] {
-			pp.Upgrade(room, m.Id, m.TypeOld, m.TypeNew)
+			pp.Upgrade(a, room, m.Id, m.TypeOld, m.TypeNew)
 		}
 	}
 }
@@ -356,7 +356,7 @@ func handleGetRoomList(args []interface{}) {
 	roomList := []*msg.RoomInfo{}
 	pageNum := m.PageNum - 1
 	if len(RoomList) > (pageNum+1)*5 {
-		roomList = RoomList[pageNum*5 : (pageNum+1)*5]
+		roomList = RoomList[pageNum*5: (pageNum+1)*5]
 	} else if len(RoomList) > pageNum*5 {
 		roomList = RoomList[pageNum*5:]
 	}
