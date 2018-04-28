@@ -32,9 +32,6 @@ func UpdateRoomInfo(room *Room) {
 		})
 	}
 	for _, aa := range room.User2Agent {
-		if aa == nil {
-			continue
-		}
 		(*aa).WriteMsg(&msg.RoomInfo{
 			Msg:    "ok",
 			RoomId: room.RoomId,

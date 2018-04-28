@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"unicode"
 	"reflect"
 	"errors"
 	"fmt"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/name5566/leaf/gate"
 	"github.com/name5566/leaf/log"
+	"regexp"
 )
 
 var PlayerId = 1
@@ -161,21 +161,9 @@ func validLen(word string, min, max int) bool {
 }
 
 func filter(word string) bool {
-	// check word with Chs & Digit & Letter
-	var (
-		LowerMin = '\u0041'
-		LowerMax = '\u005a'
-		UpperMin = '\u0061'
-		UpperMax = '\u007a'
-	)
-	for _, r := range []rune(word) {
-		if unicode.IsDigit(r) { // 数字
-			continue
-		} else if (r > LowerMin && r < LowerMax) || (r > UpperMin && r < UpperMax) { // 字母
-			continue
-		} else {
-			return false
-		}
+	reg := regexp.MustCompile(`[^\w]`)
+	if len(reg.FindAllString(word, -1)) != 0 {
+		return false
 	}
 	return true
 }

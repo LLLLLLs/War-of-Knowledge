@@ -291,10 +291,12 @@ func QuitMatch(a gate.Agent) {
 	if roomId, ok := Agent2Room[a]; ok {
 		if room, ok := GetRoom(roomId); ok {
 			if room.PlayerCount == 1 {
-				DeleteRoom(roomId, a, false)
+				delete(Agent2Room, a)
+				delete(Rooms, room.RoomId)
 				log.Debug("退出成功,房间%d删除", roomId)
 				return
 			}
+			log.Debug("战斗已经开始，无法退出")
 		}
 	}
 	log.Debug("获取房间失败")
@@ -315,6 +317,7 @@ func ExitRoom(a gate.Agent, room *Room) {
 			}
 		}
 		delete(room.Users, Users[a])
+		delete(room.User2Agent, Users[a])
 		UpdateRoomInfo(room)
 	}
 }
