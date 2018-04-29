@@ -60,14 +60,15 @@ func (r *Room) StartMapEvent() {
 }
 
 func (r *Room) SyncItems() {
-	itemList := []int{0, 1}
 	ticker := time.NewTicker(time.Second * 5)
 	for {
 		select {
 		case <-ticker.C:
+			itemList := []int{0, 1}
 			if r.Closed {
 				return
 			}
+			r.Lock.Lock()
 			for _, pp := range r.Players {
 				for _, h := range pp.Heros {
 					itemList = append(itemList, h.ID)
@@ -83,6 +84,7 @@ func (r *Room) SyncItems() {
 					})
 				}
 			}
+			r.Lock.Unlock()
 		}
 	}
 }
@@ -113,6 +115,7 @@ func StartBattle(room *Room) {
 	}
 	timer := time.NewTimer(time.Second * 3)
 	<-timer.C
+	room.Lock.Lock()
 	for _, aa := range room.User2Agent {
 		// 设置玩家信息为战斗中(用于断线重连)
 		userData := gamedata.UsersMap[Users[*aa]]
@@ -123,6 +126,7 @@ func StartBattle(room *Room) {
 		}
 		gamedata.Db.Update(userData, cond)
 	}
+	room.Lock.Unlock()
 	go room.StartMapEvent()
 	go room.SyncItems()
 }
@@ -181,7 +185,7 @@ func RecoverBattle(a gate.Agent, room *Room) {
 		WhichPlayer: room.Players[userName].Which,
 	})
 	log.Debug("%s 同步数据", userName)
-	room.Count += 1
+	room.PlayerCount += 1
 	timer := time.NewTimer(time.Second * 3)
 	<-timer.C
 	for user, pp := range room.Players {
@@ -216,6 +220,7 @@ func RecoverBattle(a gate.Agent, room *Room) {
 			Type: middle.GetType(),
 		})
 	}
+	log.Debug("%s 同步数据成功", userName)
 }
 
 func (r *Room) RandomResource(beforeTime, interval time.Duration) {
@@ -275,11 +280,13 @@ func NewRoom(roomId int, name string, mode string, a gate.Agent) *Room {
 	}
 	Rooms[room.RoomId] = &room
 	userName := Users[a]
+	userData := gamedata.UsersMap[userName]
 	room.Players[userName] = nil
 	Agent2Room[a] = room.RoomId
 	room.User2Agent[userName ] = &a
 	user := msg.User{
 		UserName: userName,
+		Photo:    userData.Photo,
 		KeyOwner: mode == Spec,
 	}
 	room.Users[userName] = &user
@@ -304,7 +311,13 @@ func QuitMatch(a gate.Agent) {
 
 func ExitRoom(a gate.Agent, room *Room) {
 	if room.PlayerCount == 1 {
-		DeleteRoom(room.RoomId, a, false)
+		for index, roomInfo := range RoomList {
+			if roomInfo.RoomId == room.RoomId {
+				RoomList = append(RoomList[:index], RoomList[index+1:]...)
+			}
+		}
+		delete(Rooms, room.RoomId)
+		delete(Agent2Room, a)
 	} else {
 		room.PlayerCount -= 1
 		delete(Agent2Room, a)

@@ -11,6 +11,9 @@ func GetDistance(tf1, tf2 *msg.TFServer) float64 {
 	eposition := tf2.Position
 	d := float64(0.0)
 	for i := 0; i < 3; i++ {
+		if i == 1 {
+			continue
+		}
 		d += math.Pow((sposition[i] - eposition[i]), 2)
 	}
 	distance := math.Sqrt(d)

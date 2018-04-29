@@ -65,7 +65,6 @@ func handleMatch(args []interface{}) {
 			Msg:    "匹配中",
 		})
 	} else { // 匹配成功
-		//UpdateRoomInfo(room)
 		go StartBattle(room)
 	}
 }
@@ -355,13 +354,25 @@ func handleGetRoomList(args []interface{}) {
 	log.Debug("正在获取第 %d 页...", m.PageNum)
 	roomList := []*msg.RoomInfo{}
 	pageNum := m.PageNum - 1
-	if len(RoomList) > (pageNum+1)*5 {
-		roomList = RoomList[pageNum*5: (pageNum+1)*5]
+	if m.PageNum == 999 {
+		// 长度/5的商
+		pageNum = int(len(RoomList) / 5)
+		roomList = RoomList[pageNum*5:]
+	} else if len(RoomList) > (pageNum+1)*5 {
+		roomList = RoomList[pageNum*5 : (pageNum+1)*5]
 	} else if len(RoomList) > pageNum*5 {
 		roomList = RoomList[pageNum*5:]
+	} else {
+		log.Debug("已到最后一页")
+		a.WriteMsg(&msg.RoomList{
+			Msg: "已到最后一页",
+		})
+		return
 	}
 	log.Debug("房间列表 %v", roomList)
 	a.WriteMsg(&msg.RoomList{
+		Msg:      "ok",
+		PageNum:  pageNum + 1,
 		RoomList: roomList,
 	})
 }
@@ -467,7 +478,7 @@ func handleMoveTo(args []interface{}) {
 	for _, aa := range room.User2Agent {
 		if aa == nil {
 			return
-		} else if (*aa) != a {
+		} else {
 			(*aa).WriteMsg(&msg.MoveTo{
 				Id:       h.ID,
 				TFNow:    *h.Transform,

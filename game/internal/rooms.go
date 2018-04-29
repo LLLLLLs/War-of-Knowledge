@@ -24,6 +24,7 @@ func UpdateRoomInfo(room *Room) {
 		}
 		flag += 1
 	}
+	// list里没有当前房间信息，将其添加进去
 	if flag == len(RoomList) {
 		RoomList = append(RoomList, &msg.RoomInfo{
 			RoomId: room.RoomId,

@@ -44,8 +44,8 @@ func handleAuth(args []interface{}) {
 		})
 		return
 	}
-	cipher := gamedata.MD5(m.UserPwd)
-	if cipher != userData.PwdHash {
+	//cipher := gamedata.MD5(m.UserPwd)
+	if m.UserPwd != userData.PwdHash {
 		log.Debug("账号密码不匹配")
 		a.WriteMsg(&msg.LoginStat{
 			Status:   1,
@@ -110,28 +110,28 @@ func handleRegister(args []interface{}) {
 		})
 		return
 	}
-	err = validParam(m.Name, 6, 10)
-	if err != nil {
-		log.Debug("名称%s", err.Error())
-		a.WriteMsg(&msg.RegisterInfo{
-			Msg: fmt.Sprintf("名称%s", err.Error()),
-		})
-		return
-	}
-	err = validParam(m.Password, 6, 12)
-	if err != nil {
-		log.Debug("密码%s", err.Error())
-		a.WriteMsg(&msg.RegisterInfo{
-			Msg: fmt.Sprintf("密码%s", err.Error()),
-		})
-		return
-	}
+	//err = validParam(m.Name, 6, 10)
+	//if err != nil {
+	//	log.Debug("名称%s", err.Error())
+	//	a.WriteMsg(&msg.RegisterInfo{
+	//		Msg: fmt.Sprintf("名称%s", err.Error()),
+	//	})
+	//	return
+	//}
+	//err = validParam(m.Password, 6, 12)
+	//if err != nil {
+	//	log.Debug("密码%s", err.Error())
+	//	a.WriteMsg(&msg.RegisterInfo{
+	//		Msg: fmt.Sprintf("密码%s", err.Error()),
+	//	})
+	//	return
+	//}
 	// 开始注册账号
 	rand.Seed(time.Now().Unix())
-	photo := int(rand.Intn(10))
-	pwdHash := gamedata.MD5(m.Password)
+	photo := rand.Intn(10)
+	//pwdHash := gamedata.MD5(m.Password)
 	userData.Name = m.Name
-	userData.PwdHash = pwdHash
+	userData.PwdHash = m.Password
 	userData.Photo = photo
 	effect, err := gamedata.Db.Insert(userData)
 	if err != nil || int(effect) != 1 {

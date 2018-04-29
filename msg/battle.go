@@ -142,6 +142,8 @@ type RoomInfo struct {
 }
 
 type RoomList struct {
+	Msg      string      `json:"msg"`
+	PageNum  int         `json:"pageNum"`
 	RoomList []*RoomInfo `json:"roomList"`
 }
 

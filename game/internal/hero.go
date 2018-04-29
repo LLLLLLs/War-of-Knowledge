@@ -216,7 +216,7 @@ func (p *Player) CreateHero(heroType string, id, which int, tf *msg.TFServer) (*
 		hero := &Hero{
 			ID:        id,
 			Type:      heroType,
-			Transform: &born,
+			Transform: tf,
 			// Skills
 			HPMax:  400.0,
 			HP:     400.0,
@@ -329,6 +329,10 @@ func HealByHot(room *Room) {
 }
 
 func (h *Hero) UpdatePosition(t msg.TFServer) {
+	distance := GetDistance(&t, h.Transform)
+	if distance > (h.Speed / 10.0) {
+		return
+	}
 	h.Transform = &t
 }
 

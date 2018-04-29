@@ -89,6 +89,10 @@ func (b *Base) SubHP(damage float64, which int, room Room) {
 			Which: which,
 			Hp:    b.Hp,
 		})
+		(*aa).WriteMsg(&msg.Damage{
+			Id:     which,
+			Damage: damage,
+		})
 		pp := room.Players[user]
 		if b.Hp == 0 && which == pp.Which {
 			EndBattle(room.RoomId, *aa)
