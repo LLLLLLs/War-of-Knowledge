@@ -7,18 +7,17 @@ import (
 	"server/game"
 	"server/gate"
 	"server/login"
-	"fmt"
 	"server/gamedata"
 	"github.com/name5566/leaf/log"
 )
 
 func main() {
-	initApp()
 	lconf.LogLevel = conf.Server.LogLevel
 	lconf.LogPath = conf.Server.LogPath
 	lconf.LogFlag = conf.LogFlag
 	lconf.ConsolePort = conf.Server.ConsolePort
 	lconf.ProfilePath = conf.Server.ProfilePath
+	initApp()
 
 	leaf.Run(
 		game.Module,
@@ -29,7 +28,7 @@ func main() {
 }
 
 func initApp() {
-	fmt.Println("数据清除...")
+	log.Debug("数据清除...")
 	db := gamedata.Db
 	users := make([]gamedata.UserData, 0)
 	db.Where("login=? or in_battle=?", 1, 1).Find(&users)
@@ -48,5 +47,5 @@ func initApp() {
 			log.Debug("数据库更新失败")
 		}
 	}
-	fmt.Println("数据清除完成...")
+	log.Debug("数据清除完成...")
 }
