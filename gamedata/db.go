@@ -34,7 +34,7 @@ func InitDB(dburi string) {
 	Db = engine
 }
 
-func init() {
+func GetDbUri() string{
 	dburi := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
 		DB_USER,
@@ -43,5 +43,5 @@ func init() {
 		DB_PORT,
 		DB_DATABASE,
 	)
-	InitDB(dburi)
+	return dburi
 }

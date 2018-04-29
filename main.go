@@ -9,6 +9,8 @@ import (
 	"server/login"
 	"server/gamedata"
 	"github.com/name5566/leaf/log"
+	"flag"
+	"fmt"
 )
 
 func main() {
@@ -17,8 +19,11 @@ func main() {
 	lconf.LogFlag = conf.LogFlag
 	lconf.ConsolePort = conf.Server.ConsolePort
 	lconf.ProfilePath = conf.Server.ProfilePath
+	var debug = flag.Bool("sql", true, "")
+	flag.Parse()
+	gamedata.SetDebug(*debug)
+	fmt.Println(*debug)
 	initApp()
-
 	leaf.Run(
 		game.Module,
 		gate.Module,
@@ -28,6 +33,7 @@ func main() {
 }
 
 func initApp() {
+	gamedata.InitDB(gamedata.GetDbUri())
 	log.Debug("数据清除...")
 	db := gamedata.Db
 	users := make([]gamedata.UserData, 0)
