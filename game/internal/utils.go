@@ -35,3 +35,26 @@ func GetEnemy(a gate.Agent, room Room) *Player {
 	}
 	return nil
 }
+
+func getAngle(tf1, tf2 msg.TFServer) float64 {
+	p1, p2 := tf1.Position, tf2.Position
+	a := p2[2] - p1[2]
+	b := p2[0] - p1[0]
+	c := GetDistance(&tf1, &tf2)
+	sinA := a / c
+	A := math.Asin(sinA)
+	if sinA > 0 {
+		if b > 0 {
+			return A
+		} else {
+			return math.Pi - A
+		}
+	} else {
+		if b > 0 {
+			return A
+		} else {
+			return -math.Pi - A
+		}
+	}
+
+}

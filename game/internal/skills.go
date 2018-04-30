@@ -188,29 +188,6 @@ func (s *Skill0010) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	}
 }
 
-func getAngle(tf1, tf2 msg.TFServer) float64 {
-	p1, p2 := tf1.Position, tf2.Position
-	a := p2[2] - p1[2]
-	b := p2[0] - p1[0]
-	c := GetDistance(&tf1, &tf2)
-	sinA := a / c
-	A := math.Asin(sinA)
-	if sinA > 0 {
-		if b > 0 {
-			return A
-		} else {
-			return math.Pi - A
-		}
-	} else {
-		if b > 0 {
-			return A
-		} else {
-			return -math.Pi - A
-		}
-	}
-
-}
-
 type Skill0011 struct {
 	Cost         float64
 	CastDistance float64
@@ -516,6 +493,8 @@ func (s *Skill0200) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	room.Count += 1
 	bt := NewBarrierTree(room.Count, tf)
 	room.SetMiddle(bt.ID, bt)
+	go ForceMove(bt, room)
+	go bt.TakeAction(room)
 	for _, aa := range room.User2Agent {
 		if aa == nil {
 			continue
@@ -569,6 +548,8 @@ func (s *Skill0210) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	room.Count += 1
 	hf := NewFlower(room.Count, tf)
 	room.SetMiddle(hf.ID, hf)
+	go ForceMove(hf, room)
+	go hf.TakeAction(room)
 	for _, aa := range room.User2Agent {
 		if aa == nil {
 			continue
@@ -591,7 +572,6 @@ func (s *Skill0210) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 			hf.Type,
 		})
 	}
-	go hf.TakeAction(room)
 }
 
 type Skill0211 struct {
@@ -622,8 +602,9 @@ func (s *Skill0211) Cast(a gate.Agent, room *Room, h *Hero, tf msg.TFServer) {
 	h.MP -= s.Cost
 	room.Count += 1
 	rt := NewResourceTree(room.Count, tf)
-	go rt.TakeAction(room)
 	room.SetMiddle(rt.ID, rt)
+	go rt.TakeAction(room)
+	go ForceMove(rt, room)
 	for _, aa := range room.User2Agent {
 		if aa == nil {
 			continue

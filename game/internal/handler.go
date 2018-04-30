@@ -180,21 +180,23 @@ func handleGetResource(args []interface{}) {
 		log.Debug("no middle id:%d", m.ItemId)
 		return
 	}
+	hero, ok := p.GetHeros(m.HeroId)
+	if !ok {
+		log.Debug("英雄不存在")
+		return
+	}
+	d := GetDistance(hero.Transform, item.GetTF())
+	if d > 4 {
+		log.Debug("距离过远，获取资源请求失败")
+		return
+	}
 	switch middle := item.(type) {
 	case *Gold:
 		p.Base.Money += middle.Value
 		a.WriteMsg(&msg.MoneyLeft{p.Base.Money})
 	case *Blood:
-		hero, ok := p.GetHeros(m.HeroId)
-		if !ok {
-			log.Debug("no hero id:%d", m.HeroId)
-		}
 		hero.Heal(float64(middle.value), *room, "HP")
 	case *Mana:
-		hero, ok := p.GetHeros(m.HeroId)
-		if !ok {
-			log.Debug("no hero id:%d", m.HeroId)
-		}
 		hero.Heal(float64(middle.value), *room, "MP")
 	}
 	room.DeleteMiddle(m.ItemId)

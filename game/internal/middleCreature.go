@@ -55,6 +55,35 @@ func (m *MiddleCreature) TakeAction(room *Room) {}
 
 func (m *MiddleCreature) GetAttack() (float64, bool) { return 0, false }
 
+func ForceMove(m Middle, room *Room) {
+	timer := time.NewTimer(time.Second)
+	<-timer.C
+	room.Lock.Lock()
+	for _, pp := range room.Players {
+		for _, h := range pp.Heros {
+			distance := GetDistance(m.GetTF(), h.Transform)
+			if distance > m.GetSelfRadius()+1.5 {
+				continue
+			}
+			angle := getAngle(*m.GetTF(), *h.Transform)
+			z := (m.GetSelfRadius() + 1.5) * math.Sin(angle)
+			x := (m.GetSelfRadius() + 1.5) * math.Cos(angle)
+			h.Transform.Position[0] = m.GetTF().Position[0] + x
+			h.Transform.Position[2] = m.GetTF().Position[2] + z
+			for _, aa := range room.User2Agent {
+				if aa != nil {
+					(*aa).WriteMsg(&msg.UpdatePosition{
+						Id:       h.ID,
+						RoomId:   room.RoomId,
+						TfServer: *h.Transform,
+					})
+				}
+			}
+		}
+	}
+	room.Lock.Unlock()
+}
+
 type HealFlower struct {
 	MiddleCreature
 	SelfRadius float64
@@ -72,7 +101,7 @@ func NewFlower(id int, tf msg.TFServer) *HealFlower {
 			&tf,
 			false,
 		},
-		2.0,
+		3.0,
 		7.0,
 		time.Second * 15,
 		20.0,
@@ -168,7 +197,7 @@ func NewBarrierTree(id int, tf msg.TFServer) *BarrierTree {
 			&tf,
 			false,
 		},
-		2.0,
+		3.0,
 		time.Second * 30,
 		200,
 	}
@@ -339,7 +368,7 @@ func NewResourceTree(id int, tf msg.TFServer) *ResourceTree {
 			false,
 		},
 		10.0,
-		3,
+		3.5,
 		time.Second * 30,
 		time.Second * 3,
 		100.0,
