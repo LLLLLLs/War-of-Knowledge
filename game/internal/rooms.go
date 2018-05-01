@@ -59,7 +59,9 @@ func DeleteRoom(roomId int, a gate.Agent, surrender bool) {
 	// 正常退出 删除双方信息
 	if surrender {
 		for _, aa := range room.User2Agent {
-			delete(Agent2Room, *aa)
+			if aa != nil {
+				delete(Agent2Room, *aa)
+			}
 		}
 		delete(Rooms, roomId)
 		return

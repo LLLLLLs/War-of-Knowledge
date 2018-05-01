@@ -113,7 +113,7 @@ func NewPlayer(which int) *Player {
 		Which: which,
 		Base: &Base{ID: which,
 			Money: 1000,
-			Hp: 1000.0,
+			Hp: 3000.0,
 			TF: tf,
 			Radius: 5.0,
 			Timer: time.NewTimer(time.Minute * 30),

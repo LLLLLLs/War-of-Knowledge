@@ -198,7 +198,7 @@ func NewBarrierTree(id int, tf msg.TFServer) *BarrierTree {
 			false,
 		},
 		3.0,
-		time.Second * 30,
+		time.Second * 15,
 		200,
 	}
 }
@@ -491,7 +491,8 @@ func (rt *ResourceTree) TakeAction(room *Room) {
 }
 
 func getRandomTFInCircle(radius, selfRadius float64, tf msg.TFServer) msg.TFServer {
-	rand.Seed(time.Now().Unix())
+	time.Sleep(time.Nanosecond * 10)
+	rand.Seed(time.Now().UnixNano())
 	angle := float64(rand.Intn(360))
 	length := float64(rand.Intn(int(radius-selfRadius))) + selfRadius
 	xoffset := math.Sin(angle*math.Pi/180) * length
@@ -602,7 +603,7 @@ func NewIceWall(id int, tf msg.TFServer) *IceWall {
 			&tf,
 			false,
 		},
-		100.0,
+		200.0,
 		5.0,
 		time.Second * 10,
 	}
@@ -771,4 +772,245 @@ func (fs *FireSea) TakeAction_(room *Room, h *Hero) {
 			}
 		}
 	}(quit)
+}
+
+type Stone struct {
+	MiddleCreature
+	Duration   time.Duration
+	HP         float64
+	SelfRadius float64
+}
+
+func NewStone(id int, tf msg.TFServer) *Stone {
+	return &Stone{
+		MiddleCreature: MiddleCreature{
+			ID:         id,
+			Type:       "100",
+			TF:         &tf,
+			Invincible: false,
+		},
+		Duration:   time.Second * 15,
+		HP:         200,
+		SelfRadius: 3.5,
+	}
+}
+
+func (s *Stone) GetSelfRadius() float64 {
+	return s.SelfRadius
+}
+
+func (s *Stone) TakeAction(room *Room) {
+	s.Invincible = true
+	timer := time.NewTimer(time.Second)
+	<-timer.C
+	s.Invincible = false
+	timer1 := time.NewTimer(s.Duration)
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if room.Closed {
+					return
+				}
+			case <-timer1.C:
+				if !room.Closed || HasMiddle(s.ID, room) {
+					room.DeleteMiddle(s.ID)
+					for _, aa := range room.User2Agent {
+						if aa == nil {
+							continue
+						}
+						(*aa).WriteMsg(&msg.DeleteMiddle{s.ID})
+					}
+				}
+				return
+			}
+		}
+	}()
+}
+
+func (s *Stone) SubHp(damage float64, room Room) {
+	s.HP -= damage
+	if s.HP <= 0 {
+		s.HP = 0
+		room.DeleteMiddle(s.ID)
+	}
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateMiddleState{s.ID, s.HP})
+		(*aa).WriteMsg(&msg.Damage{Id: s.ID, Damage: damage})
+		if s.HP == 0 {
+			(*aa).WriteMsg(&msg.DeleteMiddle{s.ID})
+		}
+	}
+}
+
+type Chest struct {
+	MiddleCreature
+	Duration   time.Duration
+	HP         float64
+	SelfRadius float64
+}
+
+func NewChest(id int, tf msg.TFServer) *Chest {
+	return &Chest{
+		MiddleCreature: MiddleCreature{
+			ID:         id,
+			Type:       "200",
+			TF:         &tf,
+			Invincible: false,
+		},
+		Duration:   time.Second * 30,
+		HP:         200,
+		SelfRadius: 3.5,
+	}
+}
+
+func (c *Chest) GetSelfRadius() float64 {
+	return c.SelfRadius
+}
+
+func (c *Chest) TakeAction(room *Room) {
+	c.Invincible = true
+	timer := time.NewTimer(time.Second)
+	<-timer.C
+	c.Invincible = false
+	timer1 := time.NewTimer(c.Duration)
+	ticker := time.NewTicker(time.Second * 2)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if room.Closed {
+					return
+				}
+			case <-timer1.C:
+				if !room.Closed || HasMiddle(c.ID, room) {
+					room.DeleteMiddle(c.ID)
+					log.Debug("宝箱时间到")
+					for _, aa := range room.User2Agent {
+						if aa == nil {
+							continue
+						}
+						(*aa).WriteMsg(&msg.DeleteMiddle{c.ID})
+					}
+				}
+				return
+			}
+		}
+	}()
+}
+
+func (c *Chest) SubHp(damage float64, room Room) {
+	c.HP -= damage
+	if c.HP <= 0 {
+		c.HP = 0
+	}
+	for _, aa := range room.User2Agent {
+		if aa == nil {
+			continue
+		}
+		(*aa).WriteMsg(&msg.UpdateMiddleState{c.ID, c.HP})
+		(*aa).WriteMsg(&msg.Damage{Id: c.ID, Damage: damage})
+		if c.HP == 0 {
+			(*aa).WriteMsg(&msg.DeleteMiddle{c.ID})
+			room.DeleteMiddle(c.ID)
+		}
+	}
+	if c.HP == 0 {
+		// 生成奖励:5枚金币
+		for i := 0; i < 5; i++ {
+			tf := getRandomTFInCircle(5, c.GetSelfRadius(), *c.GetTF())
+			gold := NewGold(room.Count, tf)
+			room.Count += 1
+			room.SetMiddle(gold.ID, gold)
+			go gold.TakeAction(&room)
+			for _, aa := range room.User2Agent {
+				if aa != nil {
+					(*aa).WriteMsg(&msg.CreateMiddle{
+						ID:   gold.ID,
+						TF:   *gold.TF,
+						Type: gold.Type,
+					})
+				}
+			}
+		}
+	}
+}
+
+type Wind struct {
+	MiddleCreature
+	Speed      int
+	SelfRadius float64
+	Damage     float64
+}
+
+func NewWind(id int, tf msg.TFServer) *Wind {
+	return &Wind{
+		MiddleCreature: MiddleCreature{
+			ID:         id,
+			TF:         &tf,
+			Type:       "300",
+			Invincible: true,
+		},
+		Speed:      5,
+		SelfRadius: 2,
+		Damage:     5,
+	}
+}
+
+func (w *Wind) TakeAction(room *Room) {
+
+}
+
+func (w *Wind) MoveTo(room *Room, target msg.TFServer) {
+	ticker := time.NewTicker(time.Millisecond * 100)
+	for {
+		select {
+		case <-ticker.C:
+			if room.Closed {
+				return
+			}
+			angle := getAngle(*w.TF, target)
+			distance := float64(w.Speed) / 10.0
+			z := distance * math.Sin(angle)
+			x := distance * math.Cos(angle)
+			w.TF.Position[0] += x
+			w.TF.Position[2] += z
+			// 判定英雄是否在范围内
+			for _, pp := range room.Players {
+				for _, h := range pp.Heros {
+					d := GetDistance(w.TF, h.Transform)
+					if d < (w.SelfRadius + 2) {
+						h.SubHP(w.Damage, *room)
+						for _, aa := range room.User2Agent {
+							if aa != nil {
+								(*aa).WriteMsg(&msg.Damage{
+									Id:     h.ID,
+									Damage: w.Damage,
+								})
+							}
+						}
+					}
+				}
+			}
+			// 判定龙卷风是否走到尽头
+			remain := GetDistance(w.TF, &target)
+			//log.Debug("距离尽头还有 %f", remain)
+			if remain < 2 {
+				log.Debug("龙卷风已到尽头")
+				room.DeleteMiddle(w.ID)
+				for _, aa := range room.User2Agent {
+					if aa != nil {
+						(*aa).WriteMsg(&msg.DeleteMiddle{
+							ID: w.ID,
+						})
+					}
+				}
+				return
+			}
+		}
+	}
 }

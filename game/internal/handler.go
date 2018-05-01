@@ -186,7 +186,7 @@ func handleGetResource(args []interface{}) {
 		return
 	}
 	d := GetDistance(hero.Transform, item.GetTF())
-	if d > 4 {
+	if d > 5 {
 		log.Debug("距离过远，获取资源请求失败")
 		return
 	}
@@ -248,6 +248,7 @@ func handleSkillCrash(args []interface{}) {
 			toMiddle, ok := room.GetMiddle(m.ToId)
 			if !ok {
 				log.Debug("no object %d", m.ToId)
+				return
 			}
 			if toMiddle.IsInvincible() {
 				return

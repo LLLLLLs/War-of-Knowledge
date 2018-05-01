@@ -169,3 +169,11 @@ type StartBattle struct {
 type SyncItems struct {
 	ItemList []int `json:"itemList"`
 }
+
+type MapEvent struct {
+	Msg      string   `json:"msg"`
+	Type     int      `json:"type"`
+	Num      int      `json:"num"`
+	TFServer TFServer `json:"tfServer"`
+	ID       int      `json:"id"`
+}

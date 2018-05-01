@@ -56,7 +56,162 @@ func (r *Room) StartMapEvent() {
 		go pp.Base.GetMoneyByTime(user)
 	}
 	go HealByHot(r)
-	r.RandomResource(time.Second*10, time.Second*5)
+	go r.RandomResource(time.Second*10, time.Second*5)
+	go r.MapEvent()
+}
+
+func (r *Room) MapEvent() {
+	eventTime := time.NewTicker(time.Second * 20)
+	checkRoom := time.NewTicker(time.Second * 3)
+	for {
+		select {
+		case <-checkRoom.C:
+			if r.Closed {
+				return
+			}
+		case <-eventTime.C:
+			go RandomMapEvent(r)
+		}
+	}
+}
+
+func RandomMapEvent(room *Room) {
+	rand.Seed(time.Now().Unix())
+	randn := rand.Intn(3)
+	randn = 1
+
+	switch randn {
+	case 0:
+		log.Debug("房间 %d 生成石阵", room.RoomId)
+		go StoneEvent(room)
+	case 1:
+		log.Debug("房间 %d 生成宝箱", room.RoomId)
+		go BonusEvent(room)
+	case 2:
+		log.Debug("房间 %d 生成龙卷风", room.RoomId)
+		go WindEvent(room)
+	default:
+		log.Debug("房间 %d 错误事件id", room.RoomId)
+	}
+}
+
+func StoneEvent(room *Room) {
+	ids := []int{}
+	stones := []*Stone{}
+	room.Count += 5
+	for i := 0; i < 5; i++ {
+		ids = append(ids, room.Count-i)
+	}
+	for i := 0; i < 5; i++ {
+		tf := msg.TFServer{
+			Position: []float64{64.5, 0, float64(36 - 5*i)},
+		}
+		stones[i] = NewStone(ids[4-i], tf)
+		room.SetMiddle(stones[i].ID, stones[i])
+		go stones[i].TakeAction(room)
+		go ForceMove(stones[i], room)
+	}
+	for _, aa := range room.User2Agent {
+		if aa != nil {
+			(*aa).WriteMsg(&msg.MapEvent{
+				Msg:  "生成石阵",
+				Type: 0,
+				TFServer: msg.TFServer{
+					Position: []float64{64.5, 0, 36},
+				},
+				ID: stones[0].ID,
+			})
+		}
+	}
+}
+
+func BonusEvent(room *Room) {
+	tf := getRandTF()
+	chest := NewChest(room.Count+1, tf)
+	room.Count += 1
+	room.SetMiddle(chest.ID, chest)
+	go chest.TakeAction(room)
+	go ForceMove(chest, room)
+	for _, aa := range room.User2Agent {
+		if aa != nil {
+			(*aa).WriteMsg(&msg.MapEvent{
+				Msg:      "生成宝箱",
+				Type:     1,
+				TFServer: tf,
+				ID:       chest.ID,
+			})
+		}
+	}
+}
+
+func WindEvent(room *Room) {
+	windPosition := [6][]float64{
+		{32, 0, 41}, // 左上
+		{97, 0, 11}, // 右下
+		{97, 0, 41}, // 右上
+		{31, 0, 11}, // 左下
+		{42, 0, 26}, // 左
+		{87, 0, 26}, // 右
+	}
+	rand.Seed(time.Now().Unix())
+	num := rand.Intn(2)
+	var (
+		wind1 *Wind
+		wind2 *Wind
+		tf1   msg.TFServer
+		tg1   msg.TFServer
+		tf2   msg.TFServer
+		tg2   msg.TFServer
+	)
+	if num == 0 {
+		tf1 = msg.TFServer{
+			Position: windPosition[0],
+		}
+		tf2 = msg.TFServer{
+			Position: windPosition[2],
+		}
+		tg1 = msg.TFServer{
+			Position: windPosition[1],
+		}
+		tg2 = msg.TFServer{
+			Position: windPosition[3],
+		}
+		wind1 = NewWind(room.Count+1, tf1)
+		room.Count += 1
+		wind2 = NewWind(room.Count+1, tf2)
+		room.Count += 1
+	} else {
+		tf1 = msg.TFServer{
+			Position: []float64{42, 0, 26},
+		}
+		tg1 = msg.TFServer{
+			Position: []float64{87, 0, 26},
+		}
+		tf2 = msg.TFServer{
+			Position: []float64{87, 0, 26},
+		}
+		tg2 = msg.TFServer{
+			Position: []float64{42, 0, 26},
+		}
+		wind1 = NewWind(room.Count+1, tf1)
+		room.Count += 1
+		wind2 = NewWind(room.Count+1, tf2)
+		room.Count += 1
+	}
+	room.SetMiddle(wind1.ID, wind1)
+	room.SetMiddle(wind2.ID, wind2)
+	go wind1.MoveTo(room, tg1)
+	go wind2.MoveTo(room, tg2)
+	for _, aa := range room.User2Agent {
+		if aa != nil {
+			(*aa).WriteMsg(&msg.MapEvent{
+				Msg:  "生成龙卷风",
+				Type: 2,
+				Num:  num,
+				ID:   wind1.ID,
+			})
+		}
+	}
 }
 
 func (r *Room) SyncItems() {
@@ -236,13 +391,7 @@ func (r *Room) RandomResource(beforeTime, interval time.Duration) {
 				log.Debug("房间%d关闭-资源生成关闭", r.RoomId)
 				return
 			}
-			rand.Seed(time.Now().Unix())
-			x := float64(rand.Intn(6700))/100.0 + 29.00
-			z := float64(rand.Intn(3300))/100.0 + 9.00
-			tf := msg.TFServer{
-				Position: []float64{x, 0.07, z},
-				Rotation: []float64{0.0, 90.0, 0.0},
-			}
+			tf := getRandTF()
 			gold := NewGold(r.Count+1, tf)
 			r.Count += 1
 			r.SetMiddle(gold.ID, gold)
@@ -260,6 +409,17 @@ func (r *Room) RandomResource(beforeTime, interval time.Duration) {
 		}
 	}
 
+}
+
+func getRandTF() msg.TFServer {
+	rand.Seed(time.Now().Unix())
+	x := float64(rand.Intn(6700))/100.0 + 29.00
+	z := float64(rand.Intn(3300))/100.0 + 9.00
+	tf := msg.TFServer{
+		Position: []float64{x, 0.07, z},
+		Rotation: []float64{0.0, 90.0, 0.0},
+	}
+	return tf
 }
 
 func NewRoom(roomId int, name string, mode string, a gate.Agent) *Room {

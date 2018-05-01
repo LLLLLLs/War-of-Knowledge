@@ -59,4 +59,6 @@ func init() {
 	Processor.Register(&Test{})
 
 	Processor.Register(&SyncItems{})
+
+	Processor.Register(&MapEvent{})
 }
