@@ -106,7 +106,7 @@ func StoneEvent(room *Room) {
 		tf := msg.TFServer{
 			Position: []float64{64.5, 0, float64(36 - 5*i)},
 		}
-		stones[i] = NewStone(ids[4-i], tf)
+		stones = append(stones, NewStone(ids[4-i], tf))
 		room.SetMiddle(stones[i].ID, stones[i])
 		go stones[i].TakeAction(room)
 		go ForceMove(stones[i], room)
