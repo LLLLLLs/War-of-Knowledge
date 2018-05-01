@@ -78,7 +78,7 @@ func (r *Room) MapEvent() {
 func RandomMapEvent(room *Room) {
 	rand.Seed(time.Now().Unix())
 	randn := rand.Intn(3)
-	randn = 1
+	//randn = 1
 
 	switch randn {
 	case 0:
