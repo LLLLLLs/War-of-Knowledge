@@ -8,6 +8,7 @@ import (
 	"github.com/name5566/leaf/log"
 	"fmt"
 	"server/gamedata"
+	"time"
 )
 
 func init() {
@@ -32,6 +33,7 @@ func init() {
 	handler(&msg.FireBottleCrash{}, handleFireBottleCrash)
 	handler(&msg.Upgrade{}, handleUpgrade)
 
+	handler(&msg.HeartBeat{}, handleHeartBeat)
 	handler(&msg.Test{}, handleTest)
 }
 
@@ -80,6 +82,12 @@ func handleCreateHero(args []interface{}) {
 		return
 	}
 	player := room.Players[userName]
+	if num := len(player.Heros); num >= 3 {
+		log.Debug("创建英雄失败，最多同时存在三个英雄！")
+		a.WriteMsg(&msg.CreateHeroInf{
+			Msg: "创建英雄失败，最多同时存在三个英雄！",
+		})
+	}
 	which := int(player.Which)
 	hero, err := player.CreateHero(m.HeroType, room.Count+1, which, nil)
 	if err != nil {
@@ -511,4 +519,11 @@ func handleChangeImage(args []interface{}) {
 		Msg:   "ok",
 		Photo: userData.Photo,
 	})
+}
+
+func handleHeartBeat(args []interface{}) {
+	a := args[1].(gate.Agent)
+	log.Debug("%v 心跳", a.RemoteAddr())
+	HeartBeat[a].Reset(time.Second * 7)
+	a.WriteMsg(&msg.HeartBeat{})
 }

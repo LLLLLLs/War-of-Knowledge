@@ -261,6 +261,9 @@ func StartBattle(room *Room) {
 		i += 1
 		player := NewPlayer(which)
 		room.Players[user] = player
+		if aa == nil {
+			continue
+		}
 		(*aa).WriteMsg(&msg.MatchStat{
 			Status:      0,
 			Msg:         "开始战斗",

@@ -10,6 +10,7 @@ import (
 var (
 	Users      = make(map[gate.Agent]string)
 	Agent2Room = make(map[gate.Agent]int)
+	HeartBeat  = make(map[gate.Agent]*time.Timer)
 )
 
 func init() {
@@ -19,13 +20,24 @@ func init() {
 	skeleton.RegisterChanRPC("RecoverBattle", rpcRecoverBattle)
 }
 
+// 检测连接是否中断
+// 客户端每秒发一次心跳，服务端三秒没收到心跳就判定客户端掉线
+func CheckHeart(a gate.Agent) {
+	<-HeartBeat[a].C
+	a.Close()
+	//rpcCloseAgent([]interface{}{a})
+}
+
 func rpcNewAgent(args []interface{}) {
 	a := args[0].(gate.Agent)
 	log.Debug("%v 连接", a.RemoteAddr())
+	HeartBeat[a] = time.NewTimer(time.Second * 7)
+	go CheckHeart(a)
 }
 
 func rpcCloseAgent(args []interface{}) {
 	a := args[0].(gate.Agent)
+	log.Debug("%v 断开连接", a.RemoteAddr())
 	delete(Agent2Room, a)
 	if _, ok := Users[a]; !ok {
 		log.Debug("未登录...连接断开")
