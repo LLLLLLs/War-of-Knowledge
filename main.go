@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/name5566/leaf"
-	lconf "github.com/name5566/leaf/conf"
-	"server/conf"
-	"server/game"
-	"server/gate"
-	"server/login"
-	"server/gamedata"
-	"github.com/name5566/leaf/log"
 	"flag"
 	"fmt"
+	"github.com/name5566/leaf"
+	lconf "github.com/name5566/leaf/conf"
+	"github.com/name5566/leaf/log"
+	"server/conf"
+	"server/game"
+	"server/gamedata"
+	"server/gate"
+	"server/login"
 )
 
 func main() {

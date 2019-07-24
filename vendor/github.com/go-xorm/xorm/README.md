@@ -1,3 +1,5 @@
+# xorm
+
 [中文](https://github.com/go-xorm/xorm/blob/master/README_CN.md)
 
 Xorm is a simple and powerful ORM for Go.
@@ -6,7 +8,7 @@ Xorm is a simple and powerful ORM for Go.
 [![](https://goreportcard.com/badge/github.com/go-xorm/xorm)](https://goreportcard.com/report/github.com/go-xorm/xorm) 
 [![Join the chat at https://img.shields.io/discord/323460943201959939.svg](https://img.shields.io/discord/323460943201959939.svg)](https://discord.gg/HuR2CF3)
 
-# Features
+## Features
 
 * Struct <-> Table Mapping Support
 
@@ -26,13 +28,15 @@ Xorm is a simple and powerful ORM for Go.
 
 * Optimistic Locking support
 
-* SQL Builder support via [github.com/go-xorm/builder](https://github.com/go-xorm/builder)
+* SQL Builder support via [xorm.io/builder](https://xorm.io/builder)
 
 * Automatical Read/Write seperatelly
 
 * Postgres schema support
 
-# Drivers Support
+* Context Cache support
+
+## Drivers Support
 
 Drivers for Go's sql package which currently support database/sql includes:
 
@@ -50,48 +54,17 @@ Drivers for Go's sql package which currently support database/sql includes:
 
 * Oracle: [github.com/mattn/go-oci8](https://github.com/mattn/go-oci8) (experiment)
 
-# Changelog
-
-* **v0.6.6**
-    * Some bugs fixed
-
-* **v0.6.5**
-    * Postgres schema support
-    * vgo support
-    * Add FindAndCount
-    * Database special params support via NewEngineWithParams
-    * Some bugs fixed
-
-* **v0.6.4**
-    * Automatical Read/Write seperatelly
-    * Query/QueryString/QueryInterface and action with Where/And
-    * Get support non-struct variables
-    * BufferSize on Iterate
-    * fix some other bugs.
-
-* **v0.6.3**
-    * merge tests to main project
-    * add `Exist` function
-    * add `SumInt` function
-    * Mysql now support read and create column comment.
-    * fix time related bugs.
-    * fix some other bugs.
-
-[More changes ...](https://github.com/go-xorm/manual-en-US/tree/master/chapter-16)
-
-# Installation
+## Installation
 
 	go get github.com/go-xorm/xorm
 
-# Documents
+## Documents
 
 * [Manual](http://xorm.io/docs)
 
 * [GoDoc](http://godoc.org/github.com/go-xorm/xorm)
 
-* [GoWalker](http://gowalker.org/github.com/go-xorm/xorm)
-
-# Quick Start
+## Quick Start
 
 * Create Engine
 
@@ -178,20 +151,20 @@ has, err := engine.Where("name = ?", name).Desc("id").Get(&user)
 // SELECT * FROM user WHERE name = ? ORDER BY id DESC LIMIT 1
 
 var name string
-has, err := engine.Where("id = ?", id).Cols("name").Get(&name)
+has, err := engine.Table(&user).Where("id = ?", id).Cols("name").Get(&name)
 // SELECT name FROM user WHERE id = ?
 
 var id int64
-has, err := engine.Where("name = ?", name).Cols("id").Get(&id)
+has, err := engine.Table(&user).Where("name = ?", name).Cols("id").Get(&id)
 has, err := engine.SQL("select id from user").Get(&id)
 // SELECT id FROM user WHERE name = ?
 
 var valuesMap = make(map[string]string)
-has, err := engine.Where("id = ?", id).Get(&valuesMap)
+has, err := engine.Table(&user).Where("id = ?", id).Get(&valuesMap)
 // SELECT * FROM user WHERE id = ?
 
 var valuesSlice = make([]interface{}, len(cols))
-has, err := engine.Where("id = ?", id).Cols(cols...).Get(&valuesSlice)
+has, err := engine.Table(&user).Where("id = ?", id).Cols(cols...).Get(&valuesSlice)
 // SELECT col1, col2, col3 FROM user WHERE id = ?
 ```
 
@@ -387,7 +360,102 @@ if _, err := session.Exec("delete from userinfo where username = ?", user2.Usern
 return session.Commit()
 ```
 
-# Cases
+* Or you can use `Transaction` to replace above codes.
+
+```Go
+res, err := engine.Transaction(func(session *xorm.Session) (interface{}, error) {
+    user1 := Userinfo{Username: "xiaoxiao", Departname: "dev", Alias: "lunny", Created: time.Now()}
+    if _, err := session.Insert(&user1); err != nil {
+        return nil, err
+    }
+
+    user2 := Userinfo{Username: "yyy"}
+    if _, err := session.Where("id = ?", 2).Update(&user2); err != nil {
+        return nil, err
+    }
+
+    if _, err := session.Exec("delete from userinfo where username = ?", user2.Username); err != nil {
+        return nil, err
+    }
+    return nil, nil
+})
+```
+
+* Context Cache, if enabled, current query result will be cached on session and be used by next same statement on the same session.
+
+```Go
+	sess := engine.NewSession()
+	defer sess.Close()
+
+	var context = xorm.NewMemoryContextCache()
+
+	var c2 ContextGetStruct
+	has, err := sess.ID(1).ContextCache(context).Get(&c2)
+	assert.NoError(t, err)
+	assert.True(t, has)
+	assert.EqualValues(t, 1, c2.Id)
+	assert.EqualValues(t, "1", c2.Name)
+	sql, args := sess.LastSQL()
+	assert.True(t, len(sql) > 0)
+	assert.True(t, len(args) > 0)
+
+	var c3 ContextGetStruct
+	has, err = sess.ID(1).ContextCache(context).Get(&c3)
+	assert.NoError(t, err)
+	assert.True(t, has)
+	assert.EqualValues(t, 1, c3.Id)
+	assert.EqualValues(t, "1", c3.Name)
+	sql, args = sess.LastSQL()
+	assert.True(t, len(sql) == 0)
+	assert.True(t, len(args) == 0)
+```
+
+## Contributing
+
+If you want to pull request, please see [CONTRIBUTING](https://github.com/go-xorm/xorm/blob/master/CONTRIBUTING.md). And we also provide [Xorm on Google Groups](https://groups.google.com/forum/#!forum/xorm) to discuss.
+
+## Credits
+
+### Contributors
+
+This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+<a href="graphs/contributors"><img src="https://opencollective.com/xorm/contributors.svg?width=890&button=false" /></a>
+
+### Backers
+
+Thank you to all our backers! 🙏 [[Become a backer](https://opencollective.com/xorm#backer)]
+
+<a href="https://opencollective.com/xorm#backers" target="_blank"><img src="https://opencollective.com/xorm/backers.svg?width=890"></a>
+
+### Sponsors
+
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/xorm#sponsor)]
+
+## Changelog
+
+* **v0.7.0**
+    * Some bugs fixed
+
+* **v0.6.6**
+    * Some bugs fixed
+
+* **v0.6.5**
+    * Postgres schema support
+    * vgo support
+    * Add FindAndCount
+    * Database special params support via NewEngineWithParams
+    * Some bugs fixed
+
+* **v0.6.4**
+    * Automatical Read/Write seperatelly
+    * Query/QueryString/QueryInterface and action with Where/And
+    * Get support non-struct variables
+    * BufferSize on Iterate
+    * fix some other bugs.
+
+[More changes ...](https://github.com/go-xorm/manual-en-US/tree/master/chapter-16)
+
+## Cases
 
 * [studygolang](http://studygolang.com/) - [github.com/studygolang/studygolang](https://github.com/studygolang/studygolang)
 
@@ -423,15 +491,6 @@ return session.Commit()
 
 * [go-blog](http://wangcheng.me) - [github.com/easykoo/go-blog](https://github.com/easykoo/go-blog)
 
-# Discuss
+## LICENSE
 
-Please visit [Xorm on Google Groups](https://groups.google.com/forum/#!forum/xorm)
-
-# Contributing
-
-If you want to pull request, please see [CONTRIBUTING](https://github.com/go-xorm/xorm/blob/master/CONTRIBUTING.md)
-
-# LICENSE
-
- BSD License
- [http://creativecommons.org/licenses/BSD/](http://creativecommons.org/licenses/BSD/)
+BSD License [http://creativecommons.org/licenses/BSD/](http://creativecommons.org/licenses/BSD/)

@@ -32,6 +32,8 @@ xorm是一个简单而强大的Go语言ORM库. 通过它可以使数据库操作
 
 * 内置SQL Builder支持
 
+* 上下文缓存支持
+
 ## 驱动支持
 
 目前支持的Go数据库驱动和对应的数据库如下：
@@ -51,36 +53,6 @@ xorm是一个简单而强大的Go语言ORM库. 通过它可以使数据库操作
 * MsSql: [github.com/lunny/godbc](https://github.com/lunny/godbc)
 
 * Oracle: [github.com/mattn/go-oci8](https://github.com/mattn/go-oci8) (试验性支持)
-
-## 更新日志
-
-* **v0.6.6**
-    * 修正部分Bug
-
-* **v0.6.5**
-    * 通过 engine.SetSchema 来支持 schema，当前仅支持Postgres
-    * vgo 支持
-    * 新增 `FindAndCount` 函数
-    * 通过 `NewEngineWithParams` 支持数据库特别参数
-    * 修正部分Bug
-
-* **v0.6.4**
-    * 自动读写分离支持
-    * Query/QueryString/QueryInterface 支持与 Where/And 合用
-    * `Get` 支持获取非结构体变量
-    * `Iterate` 支持 `BufferSize` 
-    * 修正部分Bug
-
-* **v0.6.3**
-    * 合并单元测试到主工程
-    * 新增 `Exist` 方法
-    * 新增 `SumInt` 方法
-    * Mysql新增读取和创建字段注释支持
-    * 新增 `SetConnMaxLifetime` 方法
-    * 修正了时间相关的Bug
-    * 修复了一些其它Bug
-
-[更多更新日志...](https://github.com/go-xorm/manual-zh-CN/tree/master/chapter-16)
 
 ## 安装
 
@@ -181,20 +153,20 @@ has, err := engine.Where("name = ?", name).Desc("id").Get(&user)
 // SELECT * FROM user WHERE name = ? ORDER BY id DESC LIMIT 1
 
 var name string
-has, err := engine.Where("id = ?", id).Cols("name").Get(&name)
+has, err := engine.Table(&user).Where("id = ?", id).Cols("name").Get(&name)
 // SELECT name FROM user WHERE id = ?
 
 var id int64
-has, err := engine.Where("name = ?", name).Cols("id").Get(&id)
+has, err := engine.Table(&user).Where("name = ?", name).Cols("id").Get(&id)
 has, err := engine.SQL("select id from user").Get(&id)
 // SELECT id FROM user WHERE name = ?
 
 var valuesMap = make(map[string]string)
-has, err := engine.Where("id = ?", id).Get(&valuesMap)
+has, err := engine.Table(&user).Where("id = ?", id).Get(&valuesMap)
 // SELECT * FROM user WHERE id = ?
 
 var valuesSlice = make([]interface{}, len(cols))
-has, err := engine.Where("id = ?", id).Cols(cols...).Get(&valuesSlice)
+has, err := engine.Table(&user).Where("id = ?", id).Cols(cols...).Get(&valuesSlice)
 // SELECT col1, col2, col3 FROM user WHERE id = ?
 ```
 
@@ -390,6 +362,79 @@ if _, err := session.Exec("delete from userinfo where username = ?", user2.Usern
 return session.Commit()
 ```
 
+* 事务的简写方法
+
+```Go
+res, err := engine.Transaction(func(session *xorm.Session) (interface{}, error) {
+    user1 := Userinfo{Username: "xiaoxiao", Departname: "dev", Alias: "lunny", Created: time.Now()}
+    if _, err := session.Insert(&user1); err != nil {
+        return nil, err
+    }
+
+    user2 := Userinfo{Username: "yyy"}
+    if _, err := session.Where("id = ?", 2).Update(&user2); err != nil {
+        return nil, err
+    }
+
+    if _, err := session.Exec("delete from userinfo where username = ?", user2.Username); err != nil {
+        return nil, err
+    }
+    return nil, nil
+})
+```
+
+* 上下文缓存，如果启用，那么针对单个对象的查询将会被缓存到系统中，可以被下一个查询使用。
+
+```Go
+	sess := engine.NewSession()
+	defer sess.Close()
+
+	var context = xorm.NewMemoryContextCache()
+
+	var c2 ContextGetStruct
+	has, err := sess.ID(1).ContextCache(context).Get(&c2)
+	assert.NoError(t, err)
+	assert.True(t, has)
+	assert.EqualValues(t, 1, c2.Id)
+	assert.EqualValues(t, "1", c2.Name)
+	sql, args := sess.LastSQL()
+	assert.True(t, len(sql) > 0)
+	assert.True(t, len(args) > 0)
+
+	var c3 ContextGetStruct
+	has, err = sess.ID(1).ContextCache(context).Get(&c3)
+	assert.NoError(t, err)
+	assert.True(t, has)
+	assert.EqualValues(t, 1, c3.Id)
+	assert.EqualValues(t, "1", c3.Name)
+	sql, args = sess.LastSQL()
+	assert.True(t, len(sql) == 0)
+	assert.True(t, len(args) == 0)
+```
+
+## 贡献
+
+如果您也想为Xorm贡献您的力量，请查看 [CONTRIBUTING](https://github.com/go-xorm/xorm/blob/master/CONTRIBUTING.md)。您也可以加入QQ群  技术帮助和讨论。
+群一：280360085 （已满）
+群二：795010183
+
+## Credits
+
+### Contributors
+
+感谢所有的贡献者. [[Contribute](CONTRIBUTING.md)].
+<a href="graphs/contributors"><img src="https://opencollective.com/xorm/contributors.svg?width=890&button=false" /></a>
+
+### Backers
+
+感谢我们所有的 backers! 🙏 [[成为 backer](https://opencollective.com/xorm#backer)]
+
+<a href="https://opencollective.com/xorm#backers" target="_blank"><img src="https://opencollective.com/xorm/backers.svg?width=890"></a>
+
+### Sponsors
+
+成为 sponsor 来支持 xorm。您的 logo 将会被显示并被链接到您的网站。 [[成为 sponsor](https://opencollective.com/xorm#sponsor)]
+
 # 案例
 
 * [Go语言中文网](http://studygolang.com/) - [github.com/studygolang/studygolang](https://github.com/studygolang/studygolang)
@@ -424,13 +469,30 @@ return session.Commit()
 
 * [go-blog](http://wangcheng.me) - [github.com/easykoo/go-blog](https://github.com/easykoo/go-blog)
 
-## 讨论
 
-请加入QQ群：280360085 进行讨论。
+## 更新日志
 
-## 贡献
+* **v0.7.0**
+    * 修正部分Bug
 
-如果您也想为Xorm贡献您的力量，请查看 [CONTRIBUTING](https://github.com/go-xorm/xorm/blob/master/CONTRIBUTING.md)
+* **v0.6.6**
+    * 修正部分Bug
+
+* **v0.6.5**
+    * 通过 engine.SetSchema 来支持 schema，当前仅支持Postgres
+    * vgo 支持
+    * 新增 `FindAndCount` 函数
+    * 通过 `NewEngineWithParams` 支持数据库特别参数
+    * 修正部分Bug
+
+* **v0.6.4**
+    * 自动读写分离支持
+    * Query/QueryString/QueryInterface 支持与 Where/And 合用
+    * `Get` 支持获取非结构体变量
+    * `Iterate` 支持 `BufferSize` 
+    * 修正部分Bug
+
+[更多更新日志...](https://github.com/go-xorm/manual-zh-CN/tree/master/chapter-16)
 
 ## LICENSE
 
